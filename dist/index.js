@@ -492,6 +492,7 @@ var Kind;
 (function (Kind) {
     Kind[Kind["arm64"] = 0] = "arm64";
     Kind[Kind["x86_64"] = 1] = "x86_64";
+    Kind[Kind["x86"] = 2] = "x86";
 })(Kind = exports.Kind || (exports.Kind = {}));
 class Architecture {
     constructor(kind, host) {
@@ -589,6 +590,32 @@ Architecture.X86_64 = class extends Architecture {
         return this.host.hypervisor;
     }
 };
+Architecture.X86 = class extends Architecture {
+    get name() {
+        return 'x86';
+    }
+    get resourceUrl() {
+        return `${this.resourceBaseUrl}/qemu-system-x86_64-${this.hostString}.tar`;
+    }
+    get cpu() {
+        return this.hostQemu.cpu;
+    }
+    get machineType() {
+        return 'pc';
+    }
+    get accelerator() {
+        return this.hostQemu.accelerator;
+    }
+    get hypervisor() {
+        return this.host.hypervisor;
+    }
+    get efiHypervisor() {
+        return this.host.efiHypervisor;
+    }
+    get defaultHypervisor() {
+        return this.host.hypervisor;
+    }
+};
 Architecture.X86_64OpenBsd = class extends _a.X86_64 {
     get networkDevice() {
         return 'e1000';
@@ -607,7 +634,8 @@ Architecture.Arm64OpenBsd = (_b = class extends _a.Arm64 {
     _b);
 Architecture.architectureMap = new Map([
     [Kind.arm64, Architecture.Arm64],
-    [Kind.x86_64, Architecture.X86_64]
+    [Kind.x86_64, Architecture.X86_64],
+    [Kind.x86, Architecture.X86]
 ]);
 function toKind(value) {
     return architectureMap[value.toLocaleLowerCase()];
@@ -617,7 +645,8 @@ const architectureMap = {
     arm64: Kind.arm64,
     aarch64: Kind.arm64,
     'x86-64': Kind.x86_64,
-    x86_64: Kind.x86_64
+    x86_64: Kind.x86_64,
+    x86: Kind.x86
 };
 //# sourceMappingURL=architecture.js.map
 
@@ -928,6 +957,7 @@ const action_1 = __nccwpck_require__(6072);
 __nccwpck_require__(9122);
 __nccwpck_require__(2146);
 __nccwpck_require__(6653);
+__nccwpck_require__(2078);
 function main() {
     return __awaiter(this, void 0, void 0, function* () {
         try {
@@ -999,7 +1029,7 @@ class OperatingSystem {
     }
     get virtualMachineImageUrl() {
         return [
-            OperatingSystem.resourceUrls.baseUrl,
+            OperatingSystem.resourceUrls.diskBaseUrl,
             `${this.name}-builder`,
             'releases',
             'download',
@@ -1343,6 +1373,224 @@ class XhyveVm extends xhyve_vm_1.Vm {
     shutdown() {
         return __awaiter(this, void 0, void 0, function* () {
             yield this.execute('sudo shutdown -p now');
+        });
+    }
+    get networkDevice() {
+        return 'virtio-net';
+    }
+}
+exports.XhyveVm = XhyveVm;
+//# sourceMappingURL=xhyve_vm.js.map
+
+/***/ }),
+
+/***/ 2078:
+/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
+
+"use strict";
+
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+const factory_1 = __nccwpck_require__(133);
+const haiku_1 = __importDefault(__nccwpck_require__(70));
+let HaikuFactory = 
+//@ts-ignore
+class HaikuFactory extends factory_1.Factory {
+    get defaultHypervisor() {
+        return this.architecture.defaultHypervisor;
+    }
+    create(version, hypervisor) {
+        return new haiku_1.default(this.architecture, version, hypervisor);
+    }
+    validateHypervisor(kind) {
+        this.architecture.validateHypervisor(kind);
+    }
+};
+HaikuFactory = __decorate([
+    factory_1.factory
+    //@ts-ignore
+], HaikuFactory);
+//# sourceMappingURL=factory.js.map
+
+/***/ }),
+
+/***/ 70:
+/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
+
+"use strict";
+
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    Object.defineProperty(o, k2, { enumerable: true, get: function() { return m[k]; } });
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+const path = __importStar(__nccwpck_require__(1017));
+const core = __importStar(__nccwpck_require__(2186));
+const architecture = __importStar(__nccwpck_require__(4019));
+const action = __importStar(__nccwpck_require__(6072));
+const factory_1 = __nccwpck_require__(133);
+const qemu_vm_1 = __nccwpck_require__(6103);
+const os = __importStar(__nccwpck_require__(9385));
+const resource_disk_1 = __nccwpck_require__(7102);
+const version_1 = __importDefault(__nccwpck_require__(8217));
+const xhyve_vm_1 = __nccwpck_require__(223);
+let Haiku = class Haiku extends os.OperatingSystem {
+    constructor(arch, version, hypervisor) {
+        super(arch, version, hypervisor);
+    }
+    get hypervisorUrl() {
+        return this.hypervisor.getResourceUrl(this.architecture);
+    }
+    get ssHostPort() {
+        return this.hypervisor.sshPort;
+    }
+    get actionImplementationKind() {
+        return this.architecture.resolve({
+            x86_64: action.ImplementationKind.xhyve,
+            default: action.ImplementationKind.qemu
+        });
+    }
+    prepareDisk(diskImage, targetDiskName, resourcesDirectory) {
+        return __awaiter(this, void 0, void 0, function* () {
+            yield os.convertToRawDisk(diskImage, targetDiskName, resourcesDirectory);
+        });
+    }
+    get virtualMachineImageReleaseVersion() {
+        return version_1.default.operating_system.haiku;
+    }
+    get linuxDiskFileCreator() {
+        return new resource_disk_1.LinuxDiskFileCreator.FdiskDiskFileCreator();
+    }
+    get linuxDiskDeviceCreator() {
+        return new resource_disk_1.LinuxDiskDeviceCreator.FdiskDiskDeviceCreator();
+    }
+    createVirtualMachine(hypervisorDirectory, resourcesDirectory, firmwareDirectory, configuration) {
+        core.debug('Creating Haiku VM');
+        if (this.architecture.kind !== architecture.Kind.x86_64 &&
+            this.architecture.kind !== architecture.Kind.x86) {
+            throw Error(`Not implemented: Haiku guests are not implemented on ${this.architecture.name}`);
+        }
+        const config = Object.assign(Object.assign({}, configuration), { ssHostPort: this.ssHostPort, firmware: path.join(firmwareDirectory.toString(), this.hypervisor.firmwareFile), 
+            // qemu
+            cpu: this.architecture.cpu, accelerator: this.architecture.accelerator, machineType: this.architecture.machineType, 
+            // xhyve
+            uuid: this.uuid });
+        const cls = this.hypervisor.resolve({ qemu: qemu_vm_1.QemuVm, xhyve: xhyve_vm_1.XhyveVm });
+        return new cls(hypervisorDirectory, resourcesDirectory, this.architecture, config);
+    }
+};
+Haiku = __decorate([
+    factory_1.operatingSystem
+], Haiku);
+exports["default"] = Haiku;
+//# sourceMappingURL=haiku.js.map
+
+/***/ }),
+
+/***/ 6103:
+/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
+
+"use strict";
+
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.QemuVm = void 0;
+const qemu_vm_1 = __nccwpck_require__(1106);
+class QemuVm extends qemu_vm_1.Vm {
+    get hardDriverFlags() {
+        // prettier-ignore
+        return [
+            '-device', 'virtio-blk-pci,drive=drive0,bootindex=0',
+            '-drive', `if=none,file=${this.configuration.diskImage},id=drive0,cache=writeback,discard=ignore,format=raw`,
+            '-device', 'virtio-blk-pci,drive=drive1,bootindex=1',
+            '-drive', `if=none,file=${this.configuration.resourcesDiskImage},id=drive1,cache=writeback,discard=ignore,format=raw`,
+        ];
+    }
+    shutdown() {
+        return __awaiter(this, void 0, void 0, function* () {
+            yield this.execute('shutdown');
+        });
+    }
+}
+exports.QemuVm = QemuVm;
+//# sourceMappingURL=qemu_vm.js.map
+
+/***/ }),
+
+/***/ 223:
+/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
+
+"use strict";
+
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.XhyveVm = void 0;
+const xhyve_vm_1 = __nccwpck_require__(3321);
+class XhyveVm extends xhyve_vm_1.Vm {
+    get command() {
+        // prettier-ignore
+        return super.command.concat('-f', `haiku,${this.configuration.userboot},${this.configuration.diskImage},`);
+    }
+    shutdown() {
+        return __awaiter(this, void 0, void 0, function* () {
+            yield this.execute('shutdown');
         });
     }
     get networkDevice() {
@@ -1791,6 +2039,9 @@ class ResourceUrls {
     get baseUrl() {
         return `${this.domain}/cross-platform-actions`;
     }
+    get diskBaseUrl() {
+        return `${this.domain}/korli`;
+    }
     get resourceBaseUrl() {
         return `${this.baseUrl}/resources/releases/download/${version_1.default.resources}`;
     }
@@ -2238,7 +2489,8 @@ const version = {
     operating_system: {
         freebsd: 'v0.4.0',
         netbsd: 'v0.2.0',
-        openbsd: 'v0.6.0'
+        openbsd: 'v0.6.0',
+        haiku: 'v0.0.4'
     },
     resources: 'v0.7.0'
 };
@@ -2308,7 +2560,7 @@ class Vm {
     run() {
         return __awaiter(this, void 0, void 0, function* () {
             core.info('Booting VM');
-            core.debug(this.command.join(' '));
+            core.info(this.command.join(' '));
             this.vmProcess = (0, child_process_1.spawn)('sudo', this.command, {
                 detached: false,
                 stdio: ['ignore', 'inherit', 'inherit']

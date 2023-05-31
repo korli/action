@@ -67,7 +67,7 @@ export abstract class Vm {
 
   async run(): Promise<void> {
     core.info('Booting VM')
-    core.debug(this.command.join(' '))
+    core.info(this.command.join(' '))
     this.vmProcess = spawn('sudo', this.command, {
       detached: false,
       stdio: ['ignore', 'inherit', 'inherit']

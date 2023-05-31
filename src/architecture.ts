@@ -9,7 +9,8 @@ import * as vm from './vm'
 
 export enum Kind {
   arm64,
-  x86_64
+  x86_64,
+  x86
 }
 
 export abstract class Architecture {
@@ -143,6 +144,40 @@ export abstract class Architecture {
     }
   }
 
+  private static readonly X86 = class extends Architecture {
+    override get name(): string {
+      return 'x86'
+    }
+
+    override get resourceUrl(): string {
+      return `${this.resourceBaseUrl}/qemu-system-x86_64-${this.hostString}.tar`
+    }
+
+    override get cpu(): string {
+      return this.hostQemu.cpu
+    }
+
+    override get machineType(): string {
+      return 'pc'
+    }
+
+    override get accelerator(): vm.Accelerator {
+      return this.hostQemu.accelerator
+    }
+
+    override get hypervisor(): hypervisor.Hypervisor {
+      return this.host.hypervisor
+    }
+
+    override get efiHypervisor(): hypervisor.Hypervisor {
+      return this.host.efiHypervisor
+    }
+
+    override get defaultHypervisor(): hypervisor.Hypervisor {
+      return this.host.hypervisor
+    }
+  }
+
   private static readonly X86_64OpenBsd = class extends this.X86_64 {
     override get networkDevice(): string {
       return 'e1000'
@@ -166,7 +201,8 @@ export abstract class Architecture {
     typeof Architecture.X86_64
   > = new Map([
     [Kind.arm64, Architecture.Arm64],
-    [Kind.x86_64, Architecture.X86_64]
+    [Kind.x86_64, Architecture.X86_64],
+    [Kind.x86, Architecture.X86]
   ])
 }
 
@@ -178,5 +214,6 @@ const architectureMap: Record<string, Kind> = {
   arm64: Kind.arm64,
   aarch64: Kind.arm64,
   'x86-64': Kind.x86_64,
-  x86_64: Kind.x86_64
+  x86_64: Kind.x86_64,
+  x86: Kind.x86
 } as const

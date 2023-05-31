@@ -17,6 +17,10 @@ export class ResourceUrls {
     return `${this.domain}/cross-platform-actions`
   }
 
+  get diskBaseUrl(): string {
+    return `${this.domain}/korli`
+  }
+
   get resourceBaseUrl(): string {
     return `${this.baseUrl}/resources/releases/download/${version.resources}`
   }

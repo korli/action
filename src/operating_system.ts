@@ -54,7 +54,7 @@ export abstract class OperatingSystem {
 
   get virtualMachineImageUrl(): string {
     return [
-      OperatingSystem.resourceUrls.baseUrl,
+      OperatingSystem.resourceUrls.diskBaseUrl,
       `${this.name}-builder`,
       'releases',
       'download',
