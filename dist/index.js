@@ -2596,8 +2596,12 @@ const version = {
     operating_system: {
         freebsd: 'v0.5.0',
         netbsd: 'v0.2.0',
+<<<<<<< HEAD
         openbsd: 'v0.6.0',
         haiku: 'v0.0.6'
+=======
+        openbsd: 'v0.7.0'
+>>>>>>> v0.21.0
     },
     resources: 'v0.9.1'
 };
