@@ -11,7 +11,12 @@ describe('Haiku QemuVm', () => {
   let ssHostPort = 1234
 
   let osKind = os.Kind.for('haiku')
-  let architecture = arch.Architecture.for(arch.Kind.x86_64, host, osKind)
+  let architecture = arch.Architecture.for(
+    arch.Kind.x86_64,
+    host,
+    osKind,
+    host.hypervisor
+  )
   let config = {
     memory: memory,
     cpuCount: cpuCount,

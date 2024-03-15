@@ -15,22 +15,36 @@ export enum Kind {
 
 export abstract class Architecture {
   readonly kind: Kind
-  protected readonly resourceBaseUrl = ResourceUrls.create().resourceBaseUrl
-  protected readonly host: Host
+  readonly host: Host
 
-  constructor(kind: Kind, host: Host) {
+  protected readonly resourceBaseUrl = ResourceUrls.create().resourceBaseUrl
+
+  private selectedHypervisor: hypervisor.Hypervisor
+
+  constructor(kind: Kind, host: Host, hypervisor: hypervisor.Hypervisor) {
     this.kind = kind
     this.host = host
+    this.selectedHypervisor = hypervisor
   }
 
-  static for(kind: Kind, host: Host, operating_system: os.Kind): Architecture {
+  static for(
+    kind: Kind,
+    host: Host,
+    operating_system: os.Kind,
+    hypervisor: hypervisor.Hypervisor
+  ): Architecture {
     if (operating_system.is(OpenBsd)) {
-      if (kind == Kind.x86_64) return new Architecture.X86_64OpenBsd(kind, host)
+      if (kind == Kind.x86_64)
+        return new Architecture.X86_64OpenBsd(kind, host, hypervisor)
       else if (kind == Kind.arm64)
-        return new Architecture.Arm64OpenBsd(kind, host)
+        return new Architecture.Arm64OpenBsd(kind, host, hypervisor)
     }
 
-    return new (getOrThrow(Architecture.architectureMap, kind))(kind, host)
+    return new (getOrThrow(Architecture.architectureMap, kind))(
+      kind,
+      host,
+      hypervisor
+    )
   }
 
   abstract get name(): string
@@ -40,7 +54,6 @@ export abstract class Architecture {
   abstract get accelerator(): vm.Accelerator
   abstract get hypervisor(): hypervisor.Hypervisor
   abstract get efiHypervisor(): hypervisor.Hypervisor
-  abstract get defaultHypervisor(): hypervisor.Hypervisor
 
   get networkDevice(): string {
     return 'virtio-net'
@@ -63,7 +76,7 @@ export abstract class Architecture {
     return this.host.qemu
   }
 
-  private static readonly Arm64 = class extends Architecture {
+  static readonly Arm64 = class extends Architecture {
     override get name(): string {
       return 'arm64'
     }
@@ -90,10 +103,6 @@ export abstract class Architecture {
 
     override get efiHypervisor(): hypervisor.Hypervisor {
       return new hypervisor.QemuEfi()
-    }
-
-    override get defaultHypervisor(): hypervisor.Hypervisor {
-      return new hypervisor.Qemu()
     }
 
     override validateHypervisor(kind: hypervisor.Kind): void {
@@ -132,15 +141,11 @@ export abstract class Architecture {
     }
 
     override get hypervisor(): hypervisor.Hypervisor {
-      return this.host.hypervisor
+      return this.selectedHypervisor
     }
 
     override get efiHypervisor(): hypervisor.Hypervisor {
       return this.host.efiHypervisor
-    }
-
-    override get defaultHypervisor(): hypervisor.Hypervisor {
-      return this.host.hypervisor
     }
   }
 
@@ -171,10 +176,6 @@ export abstract class Architecture {
 
     override get efiHypervisor(): hypervisor.Hypervisor {
       return this.host.efiHypervisor
-    }
-
-    override get defaultHypervisor(): hypervisor.Hypervisor {
-      return this.host.hypervisor
     }
   }
 

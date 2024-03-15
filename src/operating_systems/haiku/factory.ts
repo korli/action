@@ -6,12 +6,11 @@ import Haiku from './haiku'
 @factory
 //@ts-ignore
 class HaikuFactory extends BaseFactory {
-  override get defaultHypervisor(): Hypervisor {
-    return this.architecture.defaultHypervisor
-  }
-
-  override create(version: string, hypervisor: Hypervisor): OperatingSystem {
-    return new Haiku(this.architecture, version, hypervisor)
+  override createImpl(
+    version: string,
+    _hypervisor: Hypervisor
+  ): OperatingSystem {
+    return new Haiku(this.architecture, version)
   }
 
   override validateHypervisor(kind: HypervisorKind): void {

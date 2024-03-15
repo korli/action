@@ -45,9 +45,9 @@ describe('Haiku OperatingSystem', () => {
 
   let host = new MockHost()
   let osKind = os.Kind.for('haiku')
-  let architecture = arch.Architecture.for(arch.Kind.x86_64, host, osKind)
   let vmm = host.hypervisor
-  let haiku = new Haiku(architecture, '0.0.0', vmm)
+  let architecture = arch.Architecture.for(arch.Kind.x86_64, host, osKind, vmm)
+  let haiku = new Haiku(architecture, '0.0.0')
   let hypervisorDirectory = 'hypervisor/directory'
   let resourcesDirectory = 'resources/directory'
   let firmwareDirectory = 'firmware/directory'
@@ -95,7 +95,14 @@ describe('Haiku OperatingSystem', () => {
 
     describe('when the given hypervisor is Xhyve', () => {
       it('creates a virtual machine using the Xhyve hypervisor', () => {
-        let haiku = new Haiku(architecture, '0.0.0', new hypervisor.Xhyve())
+        let archObject = arch.Architecture.for(
+          arch.Kind.x86_64,
+          host,
+          osKind,
+          new hypervisor.Xhyve()
+        )
+
+        let haiku = new Haiku(archObject, '0.0.0')
         const vm = haiku.createVirtualMachine(
           hypervisorDirectory,
           resourcesDirectory,
@@ -110,7 +117,13 @@ describe('Haiku OperatingSystem', () => {
 
     describe('when the given hypervisor is Qemu', () => {
       it('creates a virtual machine using the Qemu hypervisor', () => {
-        let haiku = new Haiku(architecture, '0.0.0', new hypervisor.Qemu())
+        let archObject = arch.Architecture.for(
+          arch.Kind.x86_64,
+          host,
+          osKind,
+          new hypervisor.Qemu()
+        )
+        let haiku = new Haiku(archObject, '0.0.0')
         const vm = haiku.createVirtualMachine(
           hypervisorDirectory,
           resourcesDirectory,

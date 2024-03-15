@@ -9,6 +9,7 @@ Some of the features that this action supports include:
 
 - Multiple operating systems with one single action
 - Multiple versions of each operating system
+- Non-x86_64 architectures
 - Allows to use default shell or Bash shell
 - Low boot overhead
 - Fast execution
@@ -118,6 +119,7 @@ This section lists the available inputs for the action.
 |-------------------------|----------|-------------------|---------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | `run`                   | ✅       | ❌                | string  | Runs command-line programs using the operating system's shell. This will be executed inside the virtual machine.                                                                                                         |
 | `operating_system`      | ✅       | ❌                | string  | The type of operating system to run the job on. See [Supported Platforms](#supported-platforms).                                                                                                                         |
+| `architecture`          | ❌       | `x86-64`          | string  | The architecture of the operating system. See [Supported Platforms](#supported-platforms).                                                                                                                               |
 | `version`               | ✅       | ❌                | string  | The version of the operating system to use. See [Supported Platforms](#supported-platforms).                                                                                                                             |
 | `shell`                 | ❌       | `default`         | string  | The shell to use to execute the commands. Defaults to the default shell for the given operating system. Allowed values are: `default`, `sh` and `bash`                                                                   |
 | `environment_variables` | ❌       | `""`              | string  | A list of environment variables to forward to the virtual machine. The list should be separated with spaces.                                                                                                             |
@@ -153,13 +155,13 @@ operating system will list which versions are supported.
 
 ### [FreeBSD][freebsd_builder] (`freebsd`)
 
-| Version | x86-64 |
-| ------- | ------ |
-| 13.2    | ✅     |
-| 13.1    | ✅     |
-| 13.0    | ✅     |
-| 12.4    | ✅     |
-| 12.2    | ✅     |
+| Version | x86-64 | arm64  |
+| ------- | ------ | ------ |
+| 13.2    | ✅     | ✅     |
+| 13.1    | ✅     | ✅     |
+| 13.0    | ✅     | ✅     |
+| 12.4    | ✅     | ✅     |
+| 12.2    | ✅     | ❌     |
 
 ### [NetBSD][netbsd_builder] (`netbsd`)
 

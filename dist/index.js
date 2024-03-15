@@ -49,7 +49,6 @@ const array_prototype_flatmap_1 = __importDefault(__nccwpck_require__(9092));
 const architecture = __importStar(__nccwpck_require__(4019));
 const hostModule = __importStar(__nccwpck_require__(8215));
 const os_factory = __importStar(__nccwpck_require__(133));
-const hypervisor_factory = __importStar(__nccwpck_require__(35));
 const resource_disk_1 = __importDefault(__nccwpck_require__(7102));
 const input = __importStar(__nccwpck_require__(1099));
 const shell = __importStar(__nccwpck_require__(9044));
@@ -66,7 +65,7 @@ class Action {
         this.targetDiskName = 'disk.raw';
         this.host = hostModule.Host.create();
         this.tempPath = fs.mkdtempSync('/tmp/resources');
-        const arch = architecture.Architecture.for(this.input.architecture, this.host, this.input.operatingSystem);
+        const arch = architecture.Architecture.for(this.input.architecture, this.host, this.input.operatingSystem, this.input.hypervisor);
         this.operatingSystem = this.createOperatingSystem(arch);
         this.resourceDisk = resource_disk_1.default.for(this);
         this.implementation = this.getImplementation(this.operatingSystem.actionImplementationKind);
@@ -261,9 +260,7 @@ class Action {
         return homeDirectory;
     }
     createOperatingSystem(arch) {
-        const factory = os_factory.Factory.for(this.input.operatingSystem, arch);
-        const hypervisor = hypervisor_factory.get(this.input.hypervisor, factory);
-        return factory.create(this.input.version, hypervisor);
+        return os_factory.Factory.for(this.input.operatingSystem, arch).create(this.input.version, this.input.hypervisor);
     }
 }
 exports.Action = Action;
@@ -331,6 +328,9 @@ const os = __importStar(__nccwpck_require__(6713));
 const host_1 = __nccwpck_require__(8215);
 const hypervisor = __importStar(__nccwpck_require__(4288));
 class Input {
+    constructor(host = host_1.host) {
+        this.host = host;
+    }
     get version() {
         if (this.version_ !== undefined)
             return this.version_;
@@ -383,7 +383,7 @@ class Input {
         const memory = core.getInput('memory');
         core.debug(`memory input: '${memory}'`);
         if (memory === undefined || memory === '')
-            return (this.memory_ = host_1.host.defaultMemory);
+            return (this.memory_ = this.host.defaultMemory);
         return (this.memory_ = memory);
     }
     get cpuCount() {
@@ -392,7 +392,7 @@ class Input {
         const cpuCount = core.getInput('cpu_count');
         core.debug(`cpuCount input: '${cpuCount}'`);
         if (cpuCount === undefined || cpuCount === '')
-            return (this.cpuCount_ = host_1.host.defaultCpuCount);
+            return (this.cpuCount_ = this.host.defaultCpuCount);
         const parsedCpuCount = parseInt(cpuCount);
         if (Number.isNaN(parsedCpuCount))
             throw Error(`Invalid CPU count: ${cpuCount}`);
@@ -404,12 +404,13 @@ class Input {
         const input = core.getInput('hypervisor');
         core.debug(`hypervisor input: '${input}'`);
         if (input === undefined || input === '')
-            return (this.hypervisor_ = null);
+            return (this.hypervisor_ = this.host.hypervisor);
         const kind = hypervisor.toKind(input);
         core.debug(`kind: '${kind}'`);
         if (kind === undefined)
             throw Error(`Invalid hypervisor: ${input}`);
-        return (this.hypervisor_ = kind);
+        const hypervisorClass = hypervisor.toHypervisor(kind);
+        return (this.hypervisor_ = new hypervisorClass());
     }
 }
 exports.Input = Input;
@@ -495,19 +496,20 @@ var Kind;
     Kind[Kind["x86"] = 2] = "x86";
 })(Kind = exports.Kind || (exports.Kind = {}));
 class Architecture {
-    constructor(kind, host) {
+    constructor(kind, host, hypervisor) {
         this.resourceBaseUrl = resource_urls_1.ResourceUrls.create().resourceBaseUrl;
         this.kind = kind;
         this.host = host;
+        this.selectedHypervisor = hypervisor;
     }
-    static for(kind, host, operating_system) {
+    static for(kind, host, operating_system, hypervisor) {
         if (operating_system.is(openbsd_1.default)) {
             if (kind == Kind.x86_64)
-                return new Architecture.X86_64OpenBsd(kind, host);
+                return new Architecture.X86_64OpenBsd(kind, host, hypervisor);
             else if (kind == Kind.arm64)
-                return new Architecture.Arm64OpenBsd(kind, host);
+                return new Architecture.Arm64OpenBsd(kind, host, hypervisor);
         }
-        return new ((0, utility_1.getOrThrow)(Architecture.architectureMap, kind))(kind, host);
+        return new ((0, utility_1.getOrThrow)(Architecture.architectureMap, kind))(kind, host, hypervisor);
     }
     get networkDevice() {
         return 'virtio-net';
@@ -550,9 +552,6 @@ Architecture.Arm64 = class extends Architecture {
     get efiHypervisor() {
         return new hypervisor.QemuEfi();
     }
-    get defaultHypervisor() {
-        return new hypervisor.Qemu();
-    }
     validateHypervisor(kind) {
         switch (kind) {
             case hypervisor.Kind.qemu:
@@ -581,13 +580,10 @@ Architecture.X86_64 = class extends Architecture {
         return this.hostQemu.accelerator;
     }
     get hypervisor() {
-        return this.host.hypervisor;
+        return this.selectedHypervisor;
     }
     get efiHypervisor() {
         return this.host.efiHypervisor;
-    }
-    get defaultHypervisor() {
-        return this.host.hypervisor;
     }
 };
 Architecture.X86 = class extends Architecture {
@@ -611,9 +607,6 @@ Architecture.X86 = class extends Architecture {
     }
     get efiHypervisor() {
         return this.host.efiHypervisor;
-    }
-    get defaultHypervisor() {
-        return this.host.hypervisor;
     }
 };
 Architecture.X86_64OpenBsd = class extends _a.X86_64 {
@@ -840,6 +833,9 @@ class Hypervisor {
 }
 exports.Hypervisor = Hypervisor;
 class Xhyve extends Hypervisor {
+    get kind() {
+        return Kind.xhyve;
+    }
     get sshPort() {
         return 22;
     }
@@ -862,6 +858,9 @@ class Qemu extends Hypervisor {
     constructor() {
         super(...arguments);
         this.firmwareDirectory = 'share/qemu';
+    }
+    get kind() {
+        return Kind.qemu;
     }
     get sshPort() {
         return 2847;
@@ -895,26 +894,6 @@ const hypervisorMap = {
     [Kind.qemu]: Qemu
 };
 //# sourceMappingURL=hypervisor.js.map
-
-/***/ }),
-
-/***/ 35:
-/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
-
-"use strict";
-
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.get = void 0;
-const hypervisor_1 = __nccwpck_require__(4288);
-function get(kind, factory) {
-    if (!kind)
-        return factory.defaultHypervisor;
-    factory.validateHypervisor(kind);
-    const hypervisorClass = (0, hypervisor_1.toHypervisor)(kind);
-    return new hypervisorClass();
-}
-exports.get = get;
-//# sourceMappingURL=hypervisor_factory.js.map
 
 /***/ }),
 
@@ -1019,13 +998,15 @@ const host_1 = __nccwpck_require__(8215);
 const resource_urls_1 = __nccwpck_require__(3990);
 const resource_disk_1 = __nccwpck_require__(7102);
 class OperatingSystem {
-    constructor(arch, version, hypervisor) {
+    constructor(arch, version) {
         this.xhyveHypervisorUrl = `${OperatingSystem.resourceUrls.resourceBaseUrl}/xhyve-macos.tar`;
         const hostString = host_1.host.toString();
         this.resourcesUrl = `${OperatingSystem.resourceUrls.resourceBaseUrl}/resources-${hostString}.tar`;
         this.version = version;
         this.architecture = arch;
-        this.hypervisor = hypervisor;
+    }
+    get hypervisor() {
+        return this.architecture.hypervisor;
     }
     get virtualMachineImageUrl() {
         return [
@@ -1045,9 +1026,6 @@ class OperatingSystem {
     }
     get name() {
         return this.constructor.name.toLocaleLowerCase();
-    }
-    get defaultHypervisor() {
-        return this.architecture.defaultHypervisor;
     }
     setupWorkDirectory(vm, workDirectory) {
         return __awaiter(this, void 0, void 0, function* () {
@@ -1129,6 +1107,10 @@ class Factory {
         const cls = (0, utility_1.getOrThrow)(factories, `${kind.name}factory`);
         return new cls(arch);
     }
+    create(version, vmm) {
+        this.validateHypervisor(vmm.kind);
+        return this.createImpl(version, vmm);
+    }
     validateHypervisor(kind) {
         switch (kind) {
             case hypervisor.Kind.qemu:
@@ -1167,34 +1149,75 @@ const factories = new Map();
 
 /***/ }),
 
+/***/ 1169:
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+const architecture_1 = __nccwpck_require__(4019);
+class Arm64 extends architecture_1.Architecture.Arm64 {
+    get hypervisor() {
+        return this.host.efiHypervisor;
+    }
+}
+exports["default"] = Arm64;
+//# sourceMappingURL=arm64.js.map
+
+/***/ }),
+
 /***/ 9122:
 /***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
 
 "use strict";
 
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    Object.defineProperty(o, k2, { enumerable: true, get: function() { return m[k]; } });
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
 var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
     var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
     if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
     else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
     return c > 3 && r && Object.defineProperty(target, key, r), r;
 };
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
+const architecture = __importStar(__nccwpck_require__(4019));
+const arm64_1 = __importDefault(__nccwpck_require__(1169));
 const factory_1 = __nccwpck_require__(133);
 const freebsd_1 = __importDefault(__nccwpck_require__(791));
 let FreeBsdFactory = 
 //@ts-ignore
 class FreeBsdFactory extends factory_1.Factory {
-    get defaultHypervisor() {
-        return this.architecture.defaultHypervisor;
-    }
-    create(version, hypervisor) {
-        return new freebsd_1.default(this.architecture, version, hypervisor);
+    createImpl(version, hypervisor) {
+        return new freebsd_1.default(this.resolveArchitecture(hypervisor), version);
     }
     validateHypervisor(kind) {
         this.architecture.validateHypervisor(kind);
+    }
+    resolveArchitecture(hypervisor) {
+        if (this.architecture.kind == architecture.Kind.arm64) {
+            return new arm64_1.default(this.architecture.kind, this.architecture.host, hypervisor);
+        }
+        return this.architecture;
     }
 };
 FreeBsdFactory = __decorate([
@@ -1259,8 +1282,8 @@ const resource_disk_1 = __nccwpck_require__(7102);
 const version_1 = __importDefault(__nccwpck_require__(8217));
 const xhyve_vm_1 = __nccwpck_require__(6176);
 let FreeBsd = class FreeBsd extends os.OperatingSystem {
-    constructor(arch, version, hypervisor) {
-        super(arch, version, hypervisor);
+    constructor(arch, version) {
+        super(arch, version);
     }
     get hypervisorUrl() {
         return this.hypervisor.getResourceUrl(this.architecture);
@@ -1269,10 +1292,14 @@ let FreeBsd = class FreeBsd extends os.OperatingSystem {
         return this.hypervisor.sshPort;
     }
     get actionImplementationKind() {
-        return this.architecture.resolve({
-            x86_64: action.ImplementationKind.xhyve,
-            default: action.ImplementationKind.qemu
-        });
+        if (this.architecture.kind === architecture.Kind.x86_64) {
+            return this.architecture.resolve({
+                x86_64: action.ImplementationKind.xhyve,
+                default: action.ImplementationKind.qemu
+            });
+        }
+        else
+            return action.ImplementationKind.qemu;
     }
     prepareDisk(diskImage, targetDiskName, resourcesDirectory) {
         return __awaiter(this, void 0, void 0, function* () {
@@ -1290,10 +1317,7 @@ let FreeBsd = class FreeBsd extends os.OperatingSystem {
     }
     createVirtualMachine(hypervisorDirectory, resourcesDirectory, firmwareDirectory, configuration) {
         core.debug('Creating FreeBSD VM');
-        if (this.architecture.kind !== architecture.Kind.x86_64) {
-            throw Error(`Not implemented: FreeBSD guests are not implemented on ${this.architecture.name}`);
-        }
-        const config = Object.assign(Object.assign({}, configuration), { ssHostPort: this.ssHostPort, firmware: path.join(firmwareDirectory.toString(), this.hypervisor.firmwareFile), 
+        const config = Object.assign(Object.assign({}, configuration), { ssHostPort: this.ssHostPort, firmware: path.join(firmwareDirectory.toString(), this.architecture.hypervisor.firmwareFile), 
             // qemu
             cpu: this.architecture.cpu, accelerator: this.architecture.accelerator, machineType: this.architecture.machineType, 
             // xhyve
@@ -1404,11 +1428,8 @@ const haiku_1 = __importDefault(__nccwpck_require__(70));
 let HaikuFactory = 
 //@ts-ignore
 class HaikuFactory extends factory_1.Factory {
-    get defaultHypervisor() {
-        return this.architecture.defaultHypervisor;
-    }
-    create(version, hypervisor) {
-        return new haiku_1.default(this.architecture, version, hypervisor);
+    createImpl(version, _hypervisor) {
+        return new haiku_1.default(this.architecture, version);
     }
     validateHypervisor(kind) {
         this.architecture.validateHypervisor(kind);
@@ -1476,8 +1497,8 @@ const resource_disk_1 = __nccwpck_require__(7102);
 const version_1 = __importDefault(__nccwpck_require__(8217));
 const xhyve_vm_1 = __nccwpck_require__(223);
 let Haiku = class Haiku extends os.OperatingSystem {
-    constructor(arch, version, hypervisor) {
-        super(arch, version, hypervisor);
+    constructor(arch, version) {
+        super(arch, version);
     }
     get hypervisorUrl() {
         return this.hypervisor.getResourceUrl(this.architecture);
@@ -1647,17 +1668,14 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-const hypervisor_1 = __nccwpck_require__(4288);
 const factory_1 = __nccwpck_require__(133);
+const qemu_factory_1 = __importDefault(__nccwpck_require__(1149));
 const netbsd_1 = __importDefault(__nccwpck_require__(7372));
 let NetBsdFactory = 
 //@ts-ignore
-class NetBsdFactory extends factory_1.Factory {
-    get defaultHypervisor() {
-        return new hypervisor_1.Qemu();
-    }
-    create(version, hypervisor) {
-        return new netbsd_1.default(this.architecture, version, hypervisor);
+class NetBsdFactory extends qemu_factory_1.default {
+    createImpl(version) {
+        return new netbsd_1.default(this.architecture, version);
     }
 };
 NetBsdFactory = __decorate([
@@ -1721,8 +1739,8 @@ const version_1 = __importDefault(__nccwpck_require__(8217));
 const qemu_1 = __nccwpck_require__(1526);
 const qemu_vm = __importStar(__nccwpck_require__(7598));
 let NetBsd = class NetBsd extends qemu_1.Qemu {
-    constructor(arch, version, hypervisor) {
-        super(arch, version, hypervisor);
+    constructor(arch, version) {
+        super(arch, version);
     }
     get hypervisorUrl() {
         return this.architecture.resourceUrl;
@@ -1814,11 +1832,8 @@ const openbsd_1 = __importDefault(__nccwpck_require__(9243));
 let OpenBsdFactory = 
 //@ts-ignore
 class OpenBsdFactory extends factory_1.Factory {
-    get defaultHypervisor() {
-        return this.architecture.defaultHypervisor;
-    }
-    create(version, hypervisor) {
-        return new openbsd_1.default(this.architecture, version, hypervisor);
+    createImpl(version, _hypervisor) {
+        return new openbsd_1.default(this.architecture, version);
     }
     validateHypervisor(kind) {
         this.architecture.validateHypervisor(kind);
@@ -1886,8 +1901,8 @@ const os = __importStar(__nccwpck_require__(9385));
 const version_1 = __importDefault(__nccwpck_require__(8217));
 const xhyve_vm_1 = __nccwpck_require__(9662);
 let OpenBsd = class OpenBsd extends os.OperatingSystem {
-    constructor(arch, version, hypervisor) {
-        super(arch, version, hypervisor);
+    constructor(arch, version) {
+        super(arch, version);
     }
     get hypervisorUrl() {
         return this.hypervisor.getResourceUrl(this.architecture);
@@ -2006,14 +2021,34 @@ exports.XhyveVm = XhyveVm;
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.Qemu = void 0;
+const hypervisor_1 = __nccwpck_require__(4288);
 const operating_system_1 = __nccwpck_require__(9385);
 class Qemu extends operating_system_1.OperatingSystem {
+    get hypervisor() {
+        return new hypervisor_1.Qemu();
+    }
     get ssHostPort() {
         return 2847;
     }
 }
 exports.Qemu = Qemu;
 //# sourceMappingURL=qemu.js.map
+
+/***/ }),
+
+/***/ 1149:
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+const factory_1 = __nccwpck_require__(133);
+class QemuFactory extends factory_1.Factory {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    validateHypervisor(_kind) { }
+}
+exports["default"] = QemuFactory;
+//# sourceMappingURL=qemu_factory.js.map
 
 /***/ }),
 
@@ -2487,7 +2522,7 @@ exports.group = group;
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 const version = {
     operating_system: {
-        freebsd: 'v0.4.0',
+        freebsd: 'v0.5.0',
         netbsd: 'v0.2.0',
         openbsd: 'v0.6.0',
         haiku: 'v0.0.6'
