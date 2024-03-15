@@ -2527,7 +2527,7 @@ const version = {
         openbsd: 'v0.6.0',
         haiku: 'v0.0.6'
     },
-    resources: 'v0.8.0'
+    resources: 'v0.9.0'
 };
 exports["default"] = version;
 //# sourceMappingURL=version.js.map
