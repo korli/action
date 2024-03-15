@@ -9,19 +9,31 @@ describe('toKind', () => {
 
   describe('ARM64', () => {
     it('returns the arm64 architecture', () => {
-      expect(architecture.toKind('arm64')).toBe(architecture.Kind.arm64)
+      expect(architecture.toKind('ARM64')).toBe(architecture.Kind.arm64)
+    })
+  })
+
+  describe('x86-64', () => {
+    it('returns the x86_64 architecture', () => {
+      expect(architecture.toKind('x86-64')).toBe(architecture.Kind.x86_64)
     })
   })
 
   describe('x86_64', () => {
     it('returns the x86_64 architecture', () => {
-      expect(architecture.toKind('x86-64')).toBe(architecture.Kind.x86_64)
+      expect(architecture.toKind('x86_64')).toBe(architecture.Kind.x86_64)
+    })
+  })
+
+  describe('X64', () => {
+    it('returns the x86_64 architecture', () => {
+      expect(architecture.toKind('x64')).toBe(architecture.Kind.x86_64)
     })
   })
 
   describe('X86_64', () => {
     it('returns the x86_64 architecture', () => {
-      expect(architecture.toKind('x86-64')).toBe(architecture.Kind.x86_64)
+      expect(architecture.toKind('X86_64')).toBe(architecture.Kind.x86_64)
     })
   })
 

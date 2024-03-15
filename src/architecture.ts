@@ -216,5 +216,6 @@ const architectureMap: Record<string, Kind> = {
   aarch64: Kind.arm64,
   'x86-64': Kind.x86_64,
   x86_64: Kind.x86_64,
+  x64: Kind.x86_64,
   x86: Kind.x86
 } as const

@@ -126,7 +126,7 @@ This section lists the available inputs for the action.
 | `memory`                | ❌       | `6G` or `13G`     | string  | The amount of memory for the virtual machine. The default value is `6G` for Linux runners and `13G` for macOS runners.                                                                                                   |
 | `cpu_count`             | ❌       | `2` or `3`  cores | integer | The number of CPU cores for the virtual machine. The default value is `2` for Linux runners and `3` for macOS runners.                                                                                                   |
 | `hypervisor`            | ❌       | `xhyve` or `qemu` | string  | The hypervisor to use for running the virtual machine. For Linux runners the only valid value is `qemu`. For macOS runners the default for OpenBSD and FreeBSD is `xhyve` for all other platforms the default is `qemu`. |
-
+| `image_url`             | ❌       | ❌                | string  | URL a custom VM image that should be used in place of the default ones.                                                                                                                                                  |
 
 All inputs are expected to be of the specified type. It's especially important
 that you specify `version` as a string, using single or
@@ -137,6 +137,29 @@ floating point number, drop the fraction part (because `13` and `13.0` are the
 same) and the GitHub action will only see `13` instead of `13.0`. The solution
 is to explicitly state that a string is required by using quotes: `version:
 '13.0'`.
+
+#### Custom VM Image (`image_url`)
+
+With the `image_url` input it's possible to specify a custom virtual machine
+image. The main reason for this feature is to do additional custom
+provisioning, like installing additional packages. This allows to pre-install
+everything that is needed for a CI job beforhand, which can save time later
+when the job is run.
+
+Only existing operating systems, architectures and versions are supported.
+
+##### Building a Custom VM Image
+
+1. Fork one of the existing [*builder repositories ](https://github.com/cross-platform-actions/?q=builder)
+1. Add the additional provisioning to the `resources/custom.sh` script. Don't
+    remove any existing provisioning scripts.
+1. Adjust the CI workflow to remove any unwanted architectures or versions
+1. Create and push a new tag
+1. This will launch the CI workflow, build the image(s) and create a draft
+    GitHub release. The VM image(s) are automatically attached to the release
+1. Edit the release to publish it
+1. Copy the URL for the VM image
+1. Use the URL with the `image_url` input
 
 ## `Supported Platforms`
 
@@ -169,6 +192,18 @@ operating system will list which versions are supported.
 | ------- | ------ |
 | 9.3     | ✅     |
 | 9.2     | ✅     |
+
+### Architectures
+
+This section lists the supported architectures and any aliases. All the names
+are case insensitive. For a combination of supported architectures and
+operating systems, see the sections for each operating system above.
+
+| Architecture | Aliases         |
+|--------------|-----------------|
+| `arm64`      | `aarch64`       |
+| `x86-64`     | `x86_64`, `x64` |
+|              |                 |
 
 ### Hypervisors
 
