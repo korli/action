@@ -6,7 +6,7 @@ const version = {
     haiku: 'v0.0.6'
   },
 
-  resources: 'v0.9.0'
+  resources: 'v0.9.1'
 }
 
 export default version
