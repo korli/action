@@ -76,7 +76,6 @@ export default class Haiku extends os.OperatingSystem {
 
       // qemu
       cpu: this.architecture.cpu,
-      accelerator: this.architecture.accelerator,
       machineType: this.architecture.machineType,
 
       // xhyve

@@ -11,11 +11,6 @@ import {wait} from './wait'
 import * as architecture from './architecture'
 import {Input} from './action/input'
 
-export enum Accelerator {
-  hvf,
-  tcg
-}
-
 export interface Configuration {
   memory: string
   cpuCount: number
@@ -24,7 +19,6 @@ export interface Configuration {
 
   // qemu
   cpu: string
-  accelerator: Accelerator
   machineType: string
 
   // xhyve
@@ -65,13 +59,14 @@ export abstract class Vm {
   private static _isRunning?: boolean
 
   readonly hypervisorPath: fs.PathLike
+  protected readonly logFile: fs.PathLike = '/tmp/cross-platform-actions.log'
   protected vmProcess: Process = new LiveProcess()
   protected readonly architecture: architecture.Architecture
   protected readonly configuration: vm.Configuration
   protected readonly hypervisorDirectory: fs.PathLike
   protected readonly resourcesDirectory: fs.PathLike
 
-  private readonly input: Input
+  protected readonly input: Input
 
   constructor(
     hypervisorDirectory: fs.PathLike,
@@ -103,7 +98,7 @@ export abstract class Vm {
   }
 
   async run(): Promise<void> {
-    core.info('Booting VM')
+    core.info('Booting VM of type: ' + this.constructor.name)
     core.info(this.command.join(' '))
     this.vmProcess = spawn('sudo', this.command, {
       detached: false,

@@ -29,14 +29,14 @@ export abstract class Vm extends vm.Vm {
   }
 
   override get command(): string[] {
-    const accel = vm.Accelerator[this.configuration.accelerator]
+    const accelerators = this.accelerators.join(':')
 
     // prettier-ignore
     return [
       this.hypervisorPath.toString(),
       '-daemonize',
-      '-machine', `type=${this.configuration.machineType},accel=${accel}`,
-      '-cpu', this.configuration.cpu,
+      '-machine', `type=${this.configuration.machineType},accel=${accelerators}`,
+      '-cpu', this.cpuFlagValue,
       '-smp', this.configuration.cpuCount.toString(),
       '-m', this.configuration.memory,
 
@@ -45,12 +45,13 @@ export abstract class Vm extends vm.Vm {
 
       '-display', 'none',
       '-monitor', 'none',
+      '-serial', `file:${this.logFile}`,
       // '-nographic',
 
       '-boot', 'strict=off',
-      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-      '-bios', this.configuration.firmware!.toString()
-    ].concat(this.hardDriverFlags)
+      ...this.firmwareFlags,
+      ...this.hardDriverFlags
+    ]
   }
 
   protected abstract get hardDriverFlags(): string[]
@@ -76,6 +77,18 @@ export abstract class Vm extends vm.Vm {
     return ''
   }
 
+  protected get cpuidFlags(): string[] {
+    return []
+  }
+
+  protected get firmwareFlags(): string[] {
+    return ['-bios', this.configuration.firmware!.toString()]
+  }
+
+  protected get accelerators(): string[] {
+    return ['hvf', 'kvm', 'tcg']
+  }
+
   private get netdev(): string {
     return [
       'user',
@@ -85,6 +98,10 @@ export abstract class Vm extends vm.Vm {
     ]
       .filter(e => e !== '')
       .join(',')
+  }
+
+  private get cpuFlagValue(): string {
+    return [this.configuration.cpu, ...this.cpuidFlags].join(',')
   }
 }
 

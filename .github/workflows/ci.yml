@@ -17,6 +17,20 @@ jobs:
       - run: npm install
       - run: npm run all
 
+          - name: Haiku
+            version: 'r1beta4'
+            host: ubuntu-latest
+            workDirectory: /home/runner/work/action/action
+            uname:
+              hardware: amd64
+
+          - name: Haiku
+            version: 'r1beta4'
+            host: macos-latest
+            workDirectory: /Users/runner/work/action/action
+            uname:
+              hardware: amd64
+
   FreeBSD: # make sure the action works on a clean machine without building
     name: FreeBSD ${{ matrix.architecture.name }} ${{ matrix.version }} on ${{ matrix.host.name }}
     runs-on: ${{ matrix.host.name }}
@@ -51,19 +65,28 @@ jobs:
           - architecture: { name: arm64 }
             host: { name: macos-latest }
 
-          - name: Haiku
-            version: 'r1beta4'
-            host: ubuntu-latest
-            workDirectory: /home/runner/work/action/action
-            uname:
-              hardware: amd64
+        include:
+          - version: '14.0'
+            architecture: { name: arm64 }
+            host:
+              name: ubuntu-latest
+              work_directory: /home/runner/work/action/action
 
-          - name: Haiku
-            version: 'r1beta4'
-            host: macos-latest
-            workDirectory: /Users/runner/work/action/action
-            uname:
-              hardware: amd64
+          - version: '14.0'
+            architecture:
+              name: x86-64
+              uname: amd64
+            host:
+              name: ubuntu-latest
+              work_directory: /home/runner/work/action/action
+
+          - version: '14.0'
+            architecture:
+              name: x86-64
+              uname: amd64
+            host:
+              name: macos-latest
+              work_directory: /Users/runner/work/action/action
 
     steps:
       - name: Checkout
@@ -75,6 +98,61 @@ jobs:
         uses: ./.github/workflows/support/test
         with:
           name: FreeBSD
+          architecture: ${{ matrix.architecture.name }}
+          version: ${{ matrix.version }}
+          uname_release: ${{ matrix.version}}-RELEASE
+          uname_hardware: ${{ matrix.architecture.uname || matrix.architecture.name }}
+          work_directory: ${{ matrix.host.work_directory }}
+
+  Haiku: # make sure the action works on a clean machine without building
+    name: Haiku ${{ matrix.architecture.name }} ${{ matrix.version }} on ${{ matrix.host.name }}
+    runs-on: ${{ matrix.host.name }}
+    timeout-minutes: 5
+    strategy:
+      fail-fast: false
+      matrix:
+        version:
+          - 'r1beta4'
+
+        architecture:
+          - name: x86-64
+            uname: amd64
+
+        host:
+          - name: ubuntu-latest
+            # /home is symlinked to /usr/home. pwd will return the resolved path.
+            work_directory: /usr/home/runner/work/action/action
+
+          - name: macos-latest
+            work_directory: /Users/runner/work/action/action
+
+        include:
+          - version: 'r1beta4'
+            architecture:
+              name: x86-64
+              uname: amd64
+            host:
+              name: ubuntu-latest
+              work_directory: /home/runner/work/action/action
+
+          - version: 'r1beta4'
+            architecture:
+              name: x86-64
+              uname: amd64
+            host:
+              name: macos-latest
+              work_directory: /Users/runner/work/action/action
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: test
+        uses: ./.github/workflows/support/test
+        with:
+          name: Haiku
           architecture: ${{ matrix.architecture.name }}
           version: ${{ matrix.version }}
           uname_release: ${{ matrix.version}}-RELEASE
@@ -410,3 +488,25 @@ jobs:
           hypervisor: qemu
           shutdown_vm: true
           run: test -f foo.txt
+
+  openbsd-qemu-macos:
+    timeout-minutes: 5
+    name: Test OpenBSD with QEMU on macOS runner
+    runs-on: macos-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Test
+        uses: ./
+        with:
+          operating_system: openbsd
+          architecture: x86-64
+          version: '7.4'
+          hypervisor: qemu
+          sync_files: false
+          shutdown_vm: false
+          run: true

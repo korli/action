@@ -19,7 +19,7 @@ Some of the features that this action supports include:
 
 ### Minimal Example
 
-Here's a sample workflow file which will run the given commands on FreeBSD 13.2.
+Here's a sample workflow file which will run the given commands on FreeBSD 14.0.
 
 ```yaml
 name: CI
@@ -28,15 +28,15 @@ on: [push]
 
 jobs:
   test:
-    runs-on: macos-12
+    runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Test
-        uses: cross-platform-actions/action@v0.15.0
+        uses: cross-platform-actions/action@v0.23.0
         with:
           operating_system: freebsd
-          version: '13.2'
+          version: '14.0'
           run: |
             uname -a
             echo $SHELL
@@ -46,11 +46,10 @@ jobs:
             env | sort
 ```
 
-
 ### Full Example
 
 Here's a sample workflow file which will set up a matrix resulting in four jobs.
-One which will run on FreeBSD 13.2, one which runs OpenBSD 7.4, one which runs
+One which will run on FreeBSD 14.0, one which runs OpenBSD 7.4, one which runs
 NetBSD 9.3 and one which runs OpenBSD 7.4 on ARM64.
 
 ```yaml
@@ -60,35 +59,31 @@ on: [push]
 
 jobs:
   test:
-    runs-on: ${{ matrix.os.host }}
+    runs-on: ubuntu-latest
     strategy:
       matrix:
         os:
           - name: freebsd
             architecture: x86-64
-            version: '13.2'
-            host: macos-12
+            version: '14.0'
 
           - name: openbsd
             architecture: x86-64
             version: '7.4'
-            host: macos-12
 
           - name: openbsd
             architecture: arm64
             version: '7.4'
-            host: ubuntu-latest
 
           - name: netbsd
             architecture: x86-64
             version: '9.3'
-            host: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Test on ${{ matrix.os.name }}
-        uses: cross-platform-actions/action@v0.15.0
+        uses: cross-platform-actions/action@v0.23.0
         env:
           MY_ENV1: MY_ENV1
           MY_ENV2: MY_ENV2
@@ -184,6 +179,7 @@ operating system will list which versions are supported.
 
 | Version | x86-64 | arm64  |
 | ------- | ------ | ------ |
+| 14.0    | ✅     | ✅     |
 | 13.2    | ✅     | ✅     |
 | 13.1    | ✅     | ✅     |
 | 13.0    | ✅     | ✅     |
@@ -233,10 +229,15 @@ they can run.
 | **Linux**                                     | ✅      | ✅      | ✅     | ✅   |
 | **macos-10.15**, **macos-11**, **macos-12**   | ✅      | ✅      | ✅     | ❌   |
 
-macOS runners are, in general, preferred. They support hardware accelerated
-nested virtualization, making them significantly faster than the Linux runners.
-This only applies when the runner architecture and the guest architecture are
-the same, in this case `x86-64`.
+In general the Ubuntu runners are the preferred choice. Both macOS and Ubuntu
+runners support hardware accelerated nested virtualization. But the Ubuntu
+runners have more resources and therefore better performance. Hardware
+acceleration only applies when the runner architecture and the guest
+architecture are the same, in this case `x86-64`. `macos-14` runners which run
+on Apple Silicon does not support hardware accelerated nested virtualization
+and are not supported at all. For OpenBSD, only version 7.0 and later work with
+hardware acceleration on Linux runners. For macOS runners, all versions work
+with hardware acceleration.
 
 ## `Linux on Non-x86 Architectures`
 

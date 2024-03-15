@@ -6,6 +6,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.23.0] - 2024-02-18
+### Added
+- Add support for FreeBSD 14.0 ([#74](https://github.com/cross-platform-actions/action/issues/74))
+- Add post run step that prints the VM output
+- Support hardware accelerated virtualization on Linux runners ([#47](https://github.com/cross-platform-actions/action/issues/47))
+
+### Fixed
+- OpenBSD VM fails during "Initializing VM" with QEMU on macOS ([#73](https://github.com/cross-platform-actions/action/issues/73))
+- Use same options for rsync in both directions ([#76](https://github.com/cross-platform-actions/action/issues/76))
+
+### Changed
+- Update qemu to 8.2.0 for CVTPS2PD fix ([#78](https://github.com/cross-platform-actions/action/issues/78))
+
 ## [0.22.0] - 2023-12-27
 ### Added
 - Added support for using the action in multiple steps in the same job ([#26](https://github.com/cross-platform-actions/action/issues/26)).
@@ -166,8 +179,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Initial release
 
-[Unreleased]: https://github.com/cross-platform-actions/action/compare/v0.22.0...HEAD
+[Unreleased]: https://github.com/cross-platform-actions/action/compare/v0.23.0...HEAD
 
+[0.23.0]: https://github.com/cross-platform-actions/action/compare/v0.22.0...v0.23.0
 [0.22.0]: https://github.com/cross-platform-actions/action/compare/v0.21.1...v0.22.0
 [0.21.1]: https://github.com/cross-platform-actions/action/compare/v0.21.0...v0.21.1
 [0.21.0]: https://github.com/cross-platform-actions/action/compare/v0.20.0...v0.21.0

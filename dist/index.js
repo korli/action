@@ -100,7 +100,7 @@ class Action {
             try {
                 yield implementation.run();
                 implementation.configSSH(vm.ipAddress);
-                yield implementation.wait(120);
+                yield implementation.wait(240);
                 yield implementation.setupWorkDirectory(this.homeDirectory, this.workDirectory);
                 yield this.syncFiles(this.targetDiskName, this.resourceDisk.diskPath, ...excludes);
                 core.info('VM is ready');
@@ -208,7 +208,7 @@ class Action {
             core.debug(`Syncing files to VM, excluding: ${excludePaths}`);
             // prettier-ignore
             yield exec.exec('rsync', [
-                `-auzrtopg${this.syncVerboseFlag}`,
+                `-auz${this.syncVerboseFlag}`,
                 '--exclude', '_actions/cross-platform-actions/action',
                 ...(0, array_prototype_flatmap_1.default)(excludePaths, p => ['--exclude', p]),
                 `${this.homeDirectory}/`,
@@ -223,7 +223,7 @@ class Action {
             core.info('Syncing back files');
             // prettier-ignore
             yield exec.exec('rsync', [
-                `-uzrtopg${this.syncVerboseFlag}`,
+                `-auz${this.syncVerboseFlag}`,
                 `runner@${this.cpaHost}:work/`,
                 this.homeDirectory
             ]);
@@ -715,7 +715,6 @@ const hypervisor = __importStar(__nccwpck_require__(4288));
 const resource_urls_1 = __nccwpck_require__(3990);
 const openbsd_1 = __importDefault(__nccwpck_require__(9243));
 const utility_1 = __nccwpck_require__(2857);
-const vm = __importStar(__nccwpck_require__(2772));
 var Kind;
 (function (Kind) {
     Kind[Kind["arm64"] = 0] = "arm64";
@@ -776,9 +775,6 @@ Architecture.Arm64 = class extends Architecture {
     get machineType() {
         return 'virt';
     }
-    get accelerator() {
-        return vm.Accelerator.tcg;
-    }
     get hypervisor() {
         return new hypervisor.Qemu();
     }
@@ -812,14 +808,11 @@ Architecture.X86_64 = class extends Architecture {
     get machineType() {
         return 'q35';
     }
-    get accelerator() {
-        return this.hostQemu.accelerator;
-    }
     get hypervisor() {
         return this.selectedHypervisor;
     }
     get efiHypervisor() {
-        return this.host.efiHypervisor;
+        return this.selectedHypervisor.efi;
     }
 };
 Architecture.X86 = class extends Architecture {
@@ -834,9 +827,6 @@ Architecture.X86 = class extends Architecture {
     }
     get machineType() {
         return 'pc';
-    }
-    get accelerator() {
-        return this.hostQemu.accelerator;
     }
     get hypervisor() {
         return this.host.hypervisor;
@@ -1009,28 +999,21 @@ module.exports = Module;
 /***/ }),
 
 /***/ 9097:
-/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+/***/ ((__unused_webpack_module, exports) => {
 
 "use strict";
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-const vm_1 = __nccwpck_require__(2772);
 // Contains host specific QEMU properties
 class HostQemu {
 }
 exports["default"] = HostQemu;
 HostQemu.LinuxHostQemu = class extends HostQemu {
-    get accelerator() {
-        return vm_1.Accelerator.tcg;
-    }
     get cpu() {
         return 'max';
     }
 };
 HostQemu.MacosHostQemu = class extends HostQemu {
-    get accelerator() {
-        return vm_1.Accelerator.hvf;
-    }
     get cpu() {
         return 'max';
     }
@@ -1045,7 +1028,7 @@ HostQemu.MacosHostQemu = class extends HostQemu {
 "use strict";
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.toHypervisor = exports.QemuEfi = exports.Qemu = exports.Xhyve = exports.Hypervisor = exports.toKind = exports.Kind = void 0;
+exports.toHypervisor = exports.QemuEfi = exports.Qemu = exports.Xhyve = exports.toKind = exports.Kind = void 0;
 const resource_urls_1 = __nccwpck_require__(3990);
 const qemu_vm_1 = __nccwpck_require__(1106);
 const xhyve_vm_1 = __nccwpck_require__(3321);
@@ -1063,10 +1046,7 @@ const architectureMap = {
     xhyve: Kind.xhyve,
     qemu: Kind.qemu
 };
-class Hypervisor {
-}
-exports.Hypervisor = Hypervisor;
-class Xhyve extends Hypervisor {
+class Xhyve {
     get kind() {
         return Kind.xhyve;
     }
@@ -1079,6 +1059,9 @@ class Xhyve extends Hypervisor {
     get vmModule() {
         return xhyve_vm_1.Vm;
     }
+    get efi() {
+        return this;
+    }
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     getResourceUrl(_architecture) {
         return `${resource_urls_1.ResourceUrls.create().resourceBaseUrl}/xhyve-macos.tar`;
@@ -1088,9 +1071,8 @@ class Xhyve extends Hypervisor {
     }
 }
 exports.Xhyve = Xhyve;
-class Qemu extends Hypervisor {
+class Qemu {
     constructor() {
-        super(...arguments);
         this.firmwareDirectory = 'share/qemu';
     }
     get kind() {
@@ -1104,6 +1086,9 @@ class Qemu extends Hypervisor {
     }
     get vmModule() {
         return qemu_vm_1.Vm;
+    }
+    get efi() {
+        return new QemuEfi();
     }
     getResourceUrl(architecture) {
         return architecture.resourceUrl;
@@ -1529,7 +1514,7 @@ let FreeBsd = class FreeBsd extends os.OperatingSystem {
         core.debug('Creating FreeBSD VM');
         const config = Object.assign(Object.assign({}, configuration), { ssHostPort: this.ssHostPort, firmware: path.join(firmwareDirectory.toString(), this.architecture.hypervisor.firmwareFile), 
             // qemu
-            cpu: this.architecture.cpu, accelerator: this.architecture.accelerator, machineType: this.architecture.machineType, 
+            cpu: this.architecture.cpu, machineType: this.architecture.machineType, 
             // xhyve
             uuid: this.uuid });
         const cls = this.hypervisor.resolve({ qemu: qemu_vm_1.QemuVm, xhyve: xhyve_vm_1.XhyveVm });
@@ -1709,7 +1694,7 @@ let Haiku = class Haiku extends os.OperatingSystem {
         }
         const config = Object.assign(Object.assign({}, configuration), { ssHostPort: this.ssHostPort, firmware: path.join(firmwareDirectory.toString(), this.hypervisor.firmwareFile), 
             // qemu
-            cpu: this.architecture.cpu, accelerator: this.architecture.accelerator, machineType: this.architecture.machineType, 
+            cpu: this.architecture.cpu, machineType: this.architecture.machineType, 
             // xhyve
             uuid: this.uuid });
         const cls = this.hypervisor.resolve({ qemu: qemu_vm_1.QemuVm, xhyve: xhyve_vm_1.XhyveVm });
@@ -1906,7 +1891,7 @@ let NetBsd = class NetBsd extends qemu_1.Qemu {
         }
         const config = Object.assign(Object.assign({}, configuration), { ssHostPort: this.ssHostPort, firmware: path.join(firmwareDirectory.toString(), this.hypervisor.firmwareFile), 
             // qemu
-            cpu: this.architecture.cpu, accelerator: this.architecture.accelerator, machineType: this.architecture.machineType, 
+            cpu: this.architecture.cpu, machineType: this.architecture.machineType, 
             // xhyve
             uuid: this.uuid });
         return new qemu_vm.Vm(hypervisorDirectory, resourcesDirectory, this.architecture, input, config);
@@ -2022,7 +2007,6 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 const path = __importStar(__nccwpck_require__(1017));
 const core = __importStar(__nccwpck_require__(2186));
 const factory_1 = __nccwpck_require__(133);
-const host_1 = __nccwpck_require__(8215);
 const qemu_vm_1 = __nccwpck_require__(8841);
 const os = __importStar(__nccwpck_require__(9385));
 const version_1 = __importDefault(__nccwpck_require__(8217));
@@ -2049,10 +2033,14 @@ let OpenBsd = class OpenBsd extends os.OperatingSystem {
         core.debug('Creating OpenBSD VM');
         const config = Object.assign(Object.assign({}, configuration), { ssHostPort: this.ssHostPort, firmware: path.join(firmwareDirectory.toString(), this.architecture.efiHypervisor.firmwareFile), 
             // qemu
-            cpu: this.architecture.cpu, accelerator: this.architecture.accelerator, machineType: this.architecture.machineType, 
+            cpu: this.architecture.cpu, machineType: this.architecture.machineType, 
             // xhyve
             uuid: this.uuid });
-        const cls = host_1.host.hypervisor.resolve({ qemu: qemu_vm_1.QemuVm, xhyve: xhyve_vm_1.XhyveVm });
+        let qemuVmClass = this.architecture.resolve({
+            x86_64: qemu_vm_1.QemuVmX86_64,
+            default: qemu_vm_1.QemuVm
+        });
+        const cls = this.hypervisor.resolve({ qemu: qemuVmClass, xhyve: xhyve_vm_1.XhyveVm });
         return new cls(hypervisorDirectory, resourcesDirectory, this.architecture, input, config);
     }
 };
@@ -2070,7 +2058,7 @@ exports["default"] = OpenBsd;
 "use strict";
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.QemuVm = void 0;
+exports.QemuVmX86_64 = exports.QemuVm = void 0;
 const qemu_vm_1 = __nccwpck_require__(1106);
 class QemuVm extends qemu_vm_1.Vm {
     get hardDriverFlags() {
@@ -2079,8 +2067,26 @@ class QemuVm extends qemu_vm_1.Vm {
     get netDevive() {
         return this.architecture.networkDevice;
     }
+    get accelerators() {
+        return this.input.version.startsWith('6')
+            ? ['hvf', 'tcg'] // KVM doesn't work with versions older than 7.0
+            : ['hvf', 'kvm', 'tcg'];
+    }
 }
 exports.QemuVm = QemuVm;
+class QemuVmX86_64 extends QemuVm {
+    get cpuidFlags() {
+        // disable huge pages, otherwise OpenBSD will not boot: https://gitlab.com/qemu-project/qemu/-/issues/1091
+        return ['-pdpe1gb'];
+    }
+    get firmwareFlags() {
+        return [
+            '-drive',
+            `if=pflash,format=raw,unit=0,file=${this.configuration.firmware},readonly=on`
+        ];
+    }
+}
+exports.QemuVmX86_64 = QemuVmX86_64;
 //# sourceMappingURL=qemu_vm.js.map
 
 /***/ }),
@@ -2230,24 +2236,25 @@ class Vm extends vm.Vm {
         });
     }
     get command() {
-        const accel = vm.Accelerator[this.configuration.accelerator];
+        const accelerators = this.accelerators.join(':');
         // prettier-ignore
         return [
             this.hypervisorPath.toString(),
             '-daemonize',
-            '-machine', `type=${this.configuration.machineType},accel=${accel}`,
-            '-cpu', this.configuration.cpu,
+            '-machine', `type=${this.configuration.machineType},accel=${accelerators}`,
+            '-cpu', this.cpuFlagValue,
             '-smp', this.configuration.cpuCount.toString(),
             '-m', this.configuration.memory,
             '-device', `${this.netDevive},netdev=user.0`,
             '-netdev', this.netdev,
             '-display', 'none',
             '-monitor', 'none',
+            '-serial', `file:${this.logFile}`,
             // '-nographic',
             '-boot', 'strict=off',
-            // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-            '-bios', this.configuration.firmware.toString()
-        ].concat(this.hardDriverFlags);
+            ...this.firmwareFlags,
+            ...this.hardDriverFlags
+        ];
     }
     get defaultHardDriveFlags() {
         // prettier-ignore
@@ -2265,6 +2272,15 @@ class Vm extends vm.Vm {
     get ipv6() {
         return '';
     }
+    get cpuidFlags() {
+        return [];
+    }
+    get firmwareFlags() {
+        return ['-bios', this.configuration.firmware.toString()];
+    }
+    get accelerators() {
+        return ['hvf', 'kvm', 'tcg'];
+    }
     get netdev() {
         return [
             'user',
@@ -2274,6 +2290,9 @@ class Vm extends vm.Vm {
         ]
             .filter(e => e !== '')
             .join(',');
+    }
+    get cpuFlagValue() {
+        return [this.configuration.cpu, ...this.cpuidFlags].join(',');
     }
 }
 exports.Vm = Vm;
@@ -2629,12 +2648,12 @@ exports.group = group;
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 const version = {
     operating_system: {
-        freebsd: 'v0.5.0',
+        freebsd: 'v0.6.0',
         netbsd: 'v0.2.0',
         openbsd: 'v0.7.0',
         haiku: 'v0.0.6'
     },
-    resources: 'v0.9.1'
+    resources: 'v0.11.0'
 };
 exports["default"] = version;
 //# sourceMappingURL=version.js.map
@@ -2675,18 +2694,13 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.Vm = exports.Accelerator = void 0;
+exports.Vm = void 0;
 const fs = __importStar(__nccwpck_require__(7147));
 const path = __importStar(__nccwpck_require__(1017));
 const child_process_1 = __nccwpck_require__(2081);
 const core = __importStar(__nccwpck_require__(2186));
 const exec = __importStar(__nccwpck_require__(1514));
 const wait_1 = __nccwpck_require__(5817);
-var Accelerator;
-(function (Accelerator) {
-    Accelerator[Accelerator["hvf"] = 0] = "hvf";
-    Accelerator[Accelerator["tcg"] = 1] = "tcg";
-})(Accelerator = exports.Accelerator || (exports.Accelerator = {}));
 class LiveProcess {
     constructor() {
         this.exitCode = null;
@@ -2702,6 +2716,7 @@ class LiveProcess {
 }
 class Vm {
     constructor(hypervisorDirectory, resourcesDirectory, hypervisorBinary, architecture, input, configuration) {
+        this.logFile = '/tmp/cross-platform-actions.log';
         this.vmProcess = new LiveProcess();
         this.hypervisorDirectory = hypervisorDirectory;
         this.resourcesDirectory = resourcesDirectory;
@@ -2722,7 +2737,7 @@ class Vm {
     }
     run() {
         return __awaiter(this, void 0, void 0, function* () {
-            core.info('Booting VM');
+            core.info('Booting VM of type: ' + this.constructor.name);
             core.info(this.command.join(' '));
             this.vmProcess = (0, child_process_1.spawn)('sudo', this.command, {
                 detached: false,
