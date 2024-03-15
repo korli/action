@@ -59,8 +59,12 @@ export abstract class Architecture {
     return 'virtio-net'
   }
 
+  get resolveName(): string {
+    return this.constructor.name
+  }
+
   resolve<T>(implementation: Record<string, T>): T {
-    const name = this.constructor.name.toLocaleLowerCase()
+    const name = this.resolveName.toLocaleLowerCase()
     return getOrDefaultOrThrow(implementation, name)
   }
 
@@ -78,6 +82,10 @@ export abstract class Architecture {
 
   static readonly Arm64 = class extends Architecture {
     override get name(): string {
+      return 'arm64'
+    }
+
+    override get resolveName(): string {
       return 'arm64'
     }
 
@@ -122,6 +130,10 @@ export abstract class Architecture {
   private static readonly X86_64 = class extends Architecture {
     override get name(): string {
       return 'x86-64'
+    }
+
+    override get resolveName(): string {
+      return 'x86_64'
     }
 
     override get resourceUrl(): string {

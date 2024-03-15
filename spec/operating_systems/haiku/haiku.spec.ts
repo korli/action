@@ -9,13 +9,10 @@ import HostQemu from '../../../src/host_qemu'
 import * as hypervisor from '../../../src/hypervisor'
 import * as qemu from '../../../src/qemu_vm'
 import * as xhyve from '../../../src/xhyve_vm'
+import {Input} from '../../../src/action/input'
 
 describe('Haiku OperatingSystem', () => {
   class MockHost extends hostModule.Host {
-    get workDirectory(): string {
-      return '/home/runner/work'
-    }
-
     get vmModule(): typeof xhyve | typeof qemu {
       return qemu
     }
@@ -51,6 +48,7 @@ describe('Haiku OperatingSystem', () => {
   let hypervisorDirectory = 'hypervisor/directory'
   let resourcesDirectory = 'resources/directory'
   let firmwareDirectory = 'firmware/directory'
+  let input = new Input()
 
   let config = {
     memory: '4G',
@@ -74,6 +72,7 @@ describe('Haiku OperatingSystem', () => {
         hypervisorDirectory,
         resourcesDirectory,
         firmwareDirectory,
+        input,
         config
       )
 
@@ -107,6 +106,7 @@ describe('Haiku OperatingSystem', () => {
           hypervisorDirectory,
           resourcesDirectory,
           firmwareDirectory,
+          input,
           config
         )
 
@@ -128,6 +128,7 @@ describe('Haiku OperatingSystem', () => {
           hypervisorDirectory,
           resourcesDirectory,
           firmwareDirectory,
+          input,
           config
         )
 

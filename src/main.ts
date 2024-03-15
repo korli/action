@@ -7,13 +7,15 @@ import './operating_systems/openbsd/factory'
 import './operating_systems/haiku/factory'
 
 async function main(): Promise<void> {
-  try {
+  if (core.isDebug()) {
     await new Action().run()
-  } catch (error: unknown) {
-    const err = error as Error
-    core.setFailed(err.message)
-
-    if (core.isDebug() && err.stack) core.debug(err.stack)
+  } else {
+    try {
+      await new Action().run()
+    } catch (error: unknown) {
+      const err = error as Error
+      core.setFailed(err.message)
+    }
   }
 }
 

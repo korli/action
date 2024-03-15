@@ -6,7 +6,7 @@ import * as exec from '@actions/exec'
 
 import * as architecture from './architecture'
 import * as vmModule from './vm'
-import * as action from './action/action'
+import {Input} from './action/input'
 import {host} from './host'
 import {ResourceUrls} from './operating_systems/resource_urls'
 import {LinuxDiskFileCreator, LinuxDiskDeviceCreator} from './resource_disk'
@@ -44,7 +44,6 @@ export abstract class OperatingSystem {
   abstract get virtualMachineImageReleaseVersion(): string
   abstract get hypervisorUrl(): string
   abstract get ssHostPort(): number
-  abstract get actionImplementationKind(): action.ImplementationKind
 
   get hypervisor(): hypervisor.Hypervisor {
     return this.architecture.hypervisor
@@ -77,6 +76,7 @@ export abstract class OperatingSystem {
     hypervisorDirectory: fs.PathLike,
     resourcesDirectory: fs.PathLike,
     firmwareDirectory: fs.PathLike,
+    intput: Input,
     configuration: VmConfiguration
   ): vmModule.Vm
 
@@ -85,26 +85,6 @@ export abstract class OperatingSystem {
     targetDiskName: fs.PathLike,
     resourcesDirectory: fs.PathLike
   ): Promise<void>
-
-  async setupWorkDirectory(
-    vm: vmModule.Vm,
-    workDirectory: string
-  ): Promise<void> {
-    const destination = `/home/${vmModule.Vm.user}/work`
-
-    await vm.execute('mkdir -p /home/runner/work')
-
-    if (workDirectory === destination)
-      await vm.execute(`rm -rf '${destination}' && mkdir -p '${workDirectory}'`)
-    else {
-      await vm.execute(
-        `rm -rf '${destination}' && ` +
-          `sudo mkdir -p '${workDirectory}' && ` +
-          `sudo chown '${vmModule.Vm.user}' '${workDirectory}' && ` +
-          `ln -sf '${workDirectory}/' '${destination}'`
-      )
-    }
-  }
 
   protected get uuid(): string {
     return '864ED7F0-7876-4AA7-8511-816FABCFA87F'

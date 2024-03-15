@@ -4,13 +4,13 @@ import * as path from 'path'
 import * as core from '@actions/core'
 
 import * as architecture from '../../architecture'
-import * as action from '../../action/action'
 import {operatingSystem} from '../factory'
 import * as vmModule from '../../vm'
 import * as os from '../../operating_system'
 import versions from '../../version'
 import {Qemu} from '../qemu'
 import * as qemu_vm from './qemu_vm'
+import {Input} from '../../action/input'
 
 @operatingSystem
 export default class NetBsd extends Qemu {
@@ -26,10 +26,6 @@ export default class NetBsd extends Qemu {
     return versions.operating_system.netbsd
   }
 
-  get actionImplementationKind(): action.ImplementationKind {
-    return action.ImplementationKind.qemu
-  }
-
   override async prepareDisk(
     diskImage: fs.PathLike,
     targetDiskName: fs.PathLike,
@@ -42,6 +38,7 @@ export default class NetBsd extends Qemu {
     hypervisorDirectory: fs.PathLike,
     resourcesDirectory: fs.PathLike,
     firmwareDirectory: fs.PathLike,
+    input: Input,
     configuration: os.VmConfiguration
   ): vmModule.Vm {
     core.debug('Creating NetBSD VM')
@@ -74,6 +71,7 @@ export default class NetBsd extends Qemu {
       hypervisorDirectory,
       resourcesDirectory,
       this.architecture,
+      input,
       config
     )
   }

@@ -6,6 +6,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.22.0] - 2023-12-27
+### Added
+- Added support for using the action in multiple steps in the same job ([#26](https://github.com/cross-platform-actions/action/issues/26)).
+    All the inputs need to be the same for all steps, except for the following
+    inputs: `sync_files`, `shutdown_vm` and `run`.
+
+- Added support for specifying that the VM should not shutdown after the action
+    has run. This adds a new input parameter: `shutdown_vm`. When set to `false`,
+    this will hopefully mitigate very frequent freezing of VM during teardown ([#61](https://github.com/cross-platform-actions/action/issues/61), [#72](https://github.com/cross-platform-actions/action/issues/72)).
+
+### Changed
+- Always terminate VM instead of shutting down. This is more efficient and this
+    will hopefully mitigate very frequent freezing of VM during teardown
+    ([#61](https://github.com/cross-platform-actions/action/issues/61),
+    [#72](https://github.com/cross-platform-actions/action/issues/72)).
+
+- Use `unsafe` as the cache mode for QEMU disks. This should improve performance ([#67](https://github.com/cross-platform-actions/action/issues/67)).
+
+## [0.21.1] - 2023-11-03
+### Fixed
+- FreeBSD jobs occasionally fail when ejecting the disk ([#64](https://github.com/cross-platform-actions/action/issues/64))
+
 ## [0.21.0] - 2023-10-26
 ### Added
 - Add support for OpenBSD 7.4 ([openbsd-builder#15](https://github.com/cross-platform-actions/openbsd-builder/issues/15))
@@ -144,8 +166,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Initial release
 
-[Unreleased]: https://github.com/cross-platform-actions/action/compare/v0.21.0...HEAD
+[Unreleased]: https://github.com/cross-platform-actions/action/compare/v0.22.0...HEAD
 
+[0.22.0]: https://github.com/cross-platform-actions/action/compare/v0.21.1...v0.22.0
+[0.21.1]: https://github.com/cross-platform-actions/action/compare/v0.21.0...v0.21.1
 [0.21.0]: https://github.com/cross-platform-actions/action/compare/v0.20.0...v0.21.0
 [0.20.0]: https://github.com/cross-platform-actions/action/compare/v0.19.1...v0.20.0
 [0.19.1]: https://github.com/cross-platform-actions/action/compare/v0.19.0...v0.19.1

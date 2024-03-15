@@ -13,6 +13,7 @@ Some of the features that this action supports include:
 - Allows to use default shell or Bash shell
 - Low boot overhead
 - Fast execution
+- Using the action in multiple steps in the same job
 
 ## `Usage`
 
@@ -122,12 +123,13 @@ This section lists the available inputs for the action.
 | `architecture`          | ❌       | `x86-64`          | string  | The architecture of the operating system. See [Supported Platforms](#supported-platforms).                                                                                                                                                                   |
 | `version`               | ✅       | ❌                | string  | The version of the operating system to use. See [Supported Platforms](#supported-platforms).                                                                                                                                                                 |
 | `shell`                 | ❌       | `default`         | string  | The shell to use to execute the commands. Defaults to the default shell for the given operating system. Allowed values are: `default`, `sh` and `bash`                                                                                                       |
-| `environment_variables` | ❌       | `""`              | string  | A list of environment variables to forward to the virtual machine. The list should be separated with spaces.                                                                                                                                                 |
+| `environment_variables` | ❌       | `""`              | string  | A list of environment variables to forward to the virtual machine. The list should be separated with spaces. The `CI` and any environment variables starting with `GITHUB_` are forwarded automatically.                                                     |
 | `memory`                | ❌       | `6G` or `13G`     | string  | The amount of memory for the virtual machine. The default value is `6G` for Linux runners and `13G` for macOS runners.                                                                                                                                       |
 | `cpu_count`             | ❌       | `2` or `3`  cores | integer | The number of CPU cores for the virtual machine. The default value is `2` for Linux runners and `3` for macOS runners.                                                                                                                                       |
 | `hypervisor`            | ❌       | `xhyve` or `qemu` | string  | The hypervisor to use for running the virtual machine. For Linux runners the only valid value is `qemu`. For macOS runners the default for OpenBSD and FreeBSD is `xhyve` for all other platforms the default is `qemu`.                                     |
 | `image_url`             | ❌       | ❌                | string  | URL a custom VM image that should be used in place of the default ones.                                                                                                                                                                                      |
 | `sync_files`            | ❌       | `true`            | string  | Specifies if the local files should be synchronized to the virtual machine and in which direction. Valid values are `true`, `false`, `runner-to-vm` and `vm-to-runner`. `true` synchronizes files in both directions. `false` disables file synchronization. |
+| `shutdown_vm`           | ❌       | `true`            | boolean | Specifies if the VM should be shutdown after the action has been run.                                                                                                                                                                                        |
 
 All inputs are expected to be of the specified type. It's especially important
 that you specify `version` as a string, using single or
@@ -217,6 +219,10 @@ which runners they can run on.
 | `xhyve`    | ❌           | ✅          | ✅      | ✅      | ❌              |
 | `qemu`     | ✅           | ✅          | ✅      | ✅      | ✅              |
 
+`xhyve` is in general slightly faster than `qemu`. `xhyve` might have slightly
+larger boot overhead due to the need to discover the IP-address. `qemu` is
+slightly more stable than `xhyve`.
+
 ### Runners
 
 This section lists the different combinations of platforms and on which runners
@@ -226,6 +232,46 @@ they can run.
 | ----------------------------------------------| ------- | ------- | ------ | ----- |
 | **Linux**                                     | ✅      | ✅      | ✅     | ✅   |
 | **macos-10.15**, **macos-11**, **macos-12**   | ✅      | ✅      | ✅     | ❌   |
+
+macOS runners are, in general, preferred. They support hardware accelerated
+nested virtualization, making them significantly faster than the Linux runners.
+This only applies when the runner architecture and the guest architecture are
+the same, in this case `x86-64`.
+
+## `Linux on Non-x86 Architectures`
+
+There are currently no plans to add support for Linux. Instead it's very easy
+to support Linux on non-x86 architectures using the QEMU support in Docker with the
+[docker/setup-qemu-action](https://github.com/docker/setup-qemu-action) action:
+
+```yaml
+- name: Set up QEMU
+  uses: docker/setup-qemu-action@v3
+  with:
+    platforms: linux/riscv64
+
+- name: Run Command in Docker
+  run: |
+    docker run \
+      --rm \
+      -v $(pwd):/${{ github.workspace }} \
+      -w ${{ github.workspace }} \
+      --platform linux/riscv64 \
+      debian:unstable-slim \
+      <command to run>
+```
+
+For those not familiar with Docker, here's an explanation of the above command:
+
+* `run` - Runs a Docker container
+* `--rm` - Removes the container after it exits
+* `-v` - Mounts a local directory into the container. In this case the current
+    directory is mounted to the same path in the container
+* `-w` - Specifies the working directory inside the container
+* `--platform` - Specifies the platform/architecture
+* `debian:unstable-slim` - Specifies with image to create the container from.
+    Basically the Linux distribution to use
+* `<command to run>` - The command you want to run inside the container
 
 ## `Under the Hood`
 

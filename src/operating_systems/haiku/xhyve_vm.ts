@@ -8,10 +8,6 @@ export class XhyveVm extends Vm {
     )
   }
 
-  protected override async shutdown(): Promise<void> {
-    await this.execute('shutdown')
-  }
-
   protected get networkDevice(): string {
     return 'virtio-net'
   }

@@ -4,7 +4,6 @@ import * as path from 'path'
 import * as core from '@actions/core'
 
 import * as architecture from '../../architecture'
-import * as action from '../../action/action'
 import {operatingSystem} from '../factory'
 import * as vmModule from '../../vm'
 import {host} from '../../host'
@@ -12,6 +11,7 @@ import {QemuVm} from './qemu_vm'
 import * as os from '../../operating_system'
 import versions from '../../version'
 import {XhyveVm} from './xhyve_vm'
+import {Input} from '../../action/input'
 
 @operatingSystem
 export default class OpenBsd extends os.OperatingSystem {
@@ -25,12 +25,6 @@ export default class OpenBsd extends os.OperatingSystem {
 
   get ssHostPort(): number {
     return this.hypervisor.sshPort
-  }
-
-  get actionImplementationKind(): action.ImplementationKind {
-    if (this.architecture.kind === architecture.Kind.x86_64)
-      return action.ImplementationKind.xhyve
-    else return action.ImplementationKind.qemu
   }
 
   override async prepareDisk(
@@ -49,6 +43,7 @@ export default class OpenBsd extends os.OperatingSystem {
     hypervisorDirectory: fs.PathLike,
     resourcesDirectory: fs.PathLike,
     firmwareDirectory: fs.PathLike,
+    input: Input,
     configuration: os.VmConfiguration
   ): vmModule.Vm {
     core.debug('Creating OpenBSD VM')
@@ -76,6 +71,7 @@ export default class OpenBsd extends os.OperatingSystem {
       hypervisorDirectory,
       resourcesDirectory,
       this.architecture,
+      input,
       config
     )
   }

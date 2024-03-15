@@ -4,7 +4,6 @@ import * as path from 'path'
 import * as core from '@actions/core'
 
 import * as architecture from '../../architecture'
-import * as action from '../../action/action'
 import {operatingSystem} from '../factory'
 import * as vmModule from '../../vm'
 import {QemuVm} from './qemu_vm'
@@ -12,6 +11,7 @@ import * as os from '../../operating_system'
 import {LinuxDiskFileCreator, LinuxDiskDeviceCreator} from '../../resource_disk'
 import versions from '../../version'
 import {XhyveVm} from './xhyve_vm'
+import {Input} from '../../action/input'
 
 @operatingSystem
 export default class FreeBsd extends os.OperatingSystem {
@@ -25,15 +25,6 @@ export default class FreeBsd extends os.OperatingSystem {
 
   get ssHostPort(): number {
     return this.hypervisor.sshPort
-  }
-
-  get actionImplementationKind(): action.ImplementationKind {
-    if (this.architecture.kind === architecture.Kind.x86_64) {
-      return this.architecture.resolve({
-        x86_64: action.ImplementationKind.xhyve,
-        default: action.ImplementationKind.qemu
-      })
-    } else return action.ImplementationKind.qemu
   }
 
   override async prepareDisk(
@@ -60,6 +51,7 @@ export default class FreeBsd extends os.OperatingSystem {
     hypervisorDirectory: fs.PathLike,
     resourcesDirectory: fs.PathLike,
     firmwareDirectory: fs.PathLike,
+    input: Input,
     configuration: os.VmConfiguration
   ): vmModule.Vm {
     core.debug('Creating FreeBSD VM')
@@ -87,6 +79,7 @@ export default class FreeBsd extends os.OperatingSystem {
       hypervisorDirectory,
       resourcesDirectory,
       this.architecture,
+      input,
       config
     )
   }

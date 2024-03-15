@@ -2,6 +2,7 @@ import * as fs from 'fs'
 import * as architecture from './architecture'
 import {getOrDefaultOrThrow} from './utility'
 import * as vm from './vm'
+import {Input} from './action/input'
 
 export abstract class Vm extends vm.Vm {
   static readonly sshPort = 2847
@@ -10,6 +11,7 @@ export abstract class Vm extends vm.Vm {
     hypervisorDirectory: fs.PathLike,
     resourcesDirectory: fs.PathLike,
     architecture: architecture.Architecture,
+    input: Input,
     configuration: vm.Configuration
   ) {
     super(
@@ -17,6 +19,7 @@ export abstract class Vm extends vm.Vm {
       resourcesDirectory,
       'qemu',
       architecture,
+      input,
       configuration
     )
   }
@@ -31,6 +34,7 @@ export abstract class Vm extends vm.Vm {
     // prettier-ignore
     return [
       this.hypervisorPath.toString(),
+      '-daemonize',
       '-machine', `type=${this.configuration.machineType},accel=${accel}`,
       '-cpu', this.configuration.cpu,
       '-smp', this.configuration.cpuCount.toString(),
@@ -44,9 +48,8 @@ export abstract class Vm extends vm.Vm {
       // '-nographic',
 
       '-boot', 'strict=off',
-      /* eslint-disable @typescript-eslint/no-non-null-assertion */
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
       '-bios', this.configuration.firmware!.toString()
-      /* eslint-enable @typescript-eslint/no-non-null-assertion */
     ].concat(this.hardDriverFlags)
   }
 
@@ -58,10 +61,10 @@ export abstract class Vm extends vm.Vm {
       '-device', 'virtio-scsi-pci',
 
       '-device', 'scsi-hd,drive=drive0,bootindex=0',
-      '-drive', `if=none,file=${this.configuration.diskImage},id=drive0,cache=writeback,discard=ignore,format=raw`,
+      '-drive', `if=none,file=${this.configuration.diskImage},id=drive0,cache=unsafe,discard=ignore,format=raw`,
 
       '-device', 'scsi-hd,drive=drive1,bootindex=1',
-      '-drive', `if=none,file=${this.configuration.resourcesDiskImage},id=drive1,cache=writeback,discard=ignore,format=raw`,
+      '-drive', `if=none,file=${this.configuration.resourcesDiskImage},id=drive1,cache=unsafe,discard=ignore,format=raw`,
     ]
   }
 

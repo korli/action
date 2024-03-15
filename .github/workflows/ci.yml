@@ -13,7 +13,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 2
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - run: npm install
       - run: npm run all
 
@@ -67,7 +67,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           persist-credentials: false
 
@@ -117,7 +117,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           persist-credentials: false
 
@@ -154,7 +154,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           persist-credentials: false
 
@@ -174,7 +174,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           persist-credentials: false
 
@@ -184,6 +184,7 @@ jobs:
           operating_system: freebsd
           architecture: x86-64
           version: '13.0'
+          shutdown_vm: false
           run: env | sort
 
   test-cpu-count-config:
@@ -193,7 +194,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           persist-credentials: false
 
@@ -204,11 +205,11 @@ jobs:
           architecture: x86-64
           version: '13.1'
           cpu_count: 8
+          shutdown_vm: false
           run: |
             sysctl hw.ncpu
             [ `sysctl -n hw.ncpu` = 8 ]
 
-  # Does not automatically verify anything. Only for manual verification
   test-hypervisor-config:
     timeout-minutes: 5
     name: Test configuring hypervisor
@@ -216,7 +217,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           persist-credentials: false
 
@@ -227,7 +228,11 @@ jobs:
           architecture: x86-64
           version: '13.1'
           hypervisor: qemu
+          shutdown_vm: false
           run: sysctl hw.model
+
+      - name: Hypervisor should still be running, verify it's QEMU
+        run: ps aux | grep -v grep | grep -q qemu
 
   test-custom-vm-image:
     timeout-minutes: 5
@@ -236,7 +241,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           persist-credentials: false
 
@@ -247,6 +252,7 @@ jobs:
           architecture: x86-64
           version: '7.3'
           image_url: https://github.com/cross-platform-actions/test-custom-image-builder/releases/download/v1.0.0/openbsd-7.3-x86-64.qcow2
+          shutdown_vm: false
           run: test -f /foo
 
   test-cpu-features:
@@ -256,7 +262,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           persist-credentials: false
 
@@ -267,7 +273,56 @@ jobs:
           architecture: x86-64
           version: '13.2'
           hypervisor: qemu
+          shutdown_vm: false
           run: dmesg | grep -i avx2
+
+  test-no-vm-shutdown:
+    timeout-minutes: 5
+    name: Test not shutting down the VM
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Test
+        uses: ./
+        with:
+          operating_system: freebsd
+          architecture: x86-64
+          version: '13.2'
+          hypervisor: qemu
+          shutdown_vm: false
+          run: true
+
+      - name: Verify VM is still running
+        run: ps aux | grep -v grep | grep -q qemu
+
+  test-vm-shutdown:
+    timeout-minutes: 5
+    name: Test shutting down the VM
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Test
+        uses: ./
+        with:
+          operating_system: freebsd
+          architecture: x86-64
+          version: '13.2'
+          hypervisor: qemu
+          shutdown_vm: true
+          run: true
+
+      - name: Verify VM is not running
+        run: ps aux | grep -v grep | grep -q -v qemu
 
   test-sync-files:
     timeout-minutes: 5
@@ -295,7 +350,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           persist-credentials: false
 
@@ -308,7 +363,50 @@ jobs:
           architecture: x86-64
           version: '13.2'
           sync_files: ${{ matrix.data.direction }}
+          shutdown_vm: false
           run: ${{ matrix.data.run }}
 
       - name: Run after
         run: ${{ matrix.data.run_after }}
+
+  multiple-steps:
+    timeout-minutes: 5
+    name: Test running the action multiple times
+    runs-on: macos-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        hypervisor: [qemu, xhyve]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Run action first time
+        uses: ./
+        with:
+          operating_system: freebsd
+          architecture: x86-64
+          version: '13.2'
+          hypervisor: ${{ matrix.hypervisor }}
+          shutdown_vm: false
+          run: touch foo.txt
+
+      - name: Verify VM is still running
+        run: ps aux | grep -v grep | grep -q -v qemu
+
+      - name: Verify file is synced back
+        run: test -f foo.txt
+
+      - name: Run action second time
+        uses: ./
+        with:
+          operating_system: freebsd
+          architecture: x86-64
+          version: '13.2'
+          hypervisor: qemu
+          shutdown_vm: true
+          run: test -f foo.txt
