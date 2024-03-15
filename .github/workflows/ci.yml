@@ -17,20 +17,6 @@ jobs:
       - run: npm install
       - run: npm run all
 
-          - name: Haiku
-            version: 'r1beta4'
-            host: ubuntu-latest
-            workDirectory: /home/runner/work/action/action
-            uname:
-              hardware: amd64
-
-          - name: Haiku
-            version: 'r1beta4'
-            host: macos-latest
-            workDirectory: /Users/runner/work/action/action
-            uname:
-              hardware: amd64
-
   FreeBSD: # make sure the action works on a clean machine without building
     name: FreeBSD ${{ matrix.architecture.name }} ${{ matrix.version }} on ${{ matrix.host.name }}
     runs-on: ${{ matrix.host.name }}

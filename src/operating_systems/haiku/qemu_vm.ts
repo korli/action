@@ -11,4 +11,15 @@ export class QemuVm extends Vm {
       '-drive', `if=none,file=${this.configuration.resourcesDiskImage},id=drive1,cache=unsafe,discard=ignore,format=raw`,
     ]
   }
+
+  override async setupWorkDirectory(
+    homeDirectory: string,
+    workDirectory: string
+  ): Promise<void> {
+	await this.execute(
+	  `rm -rf '${homeDirectory}' && ` +
+	    `mkdir -p '${workDirectory}'`
+	)
+  }
+
 }

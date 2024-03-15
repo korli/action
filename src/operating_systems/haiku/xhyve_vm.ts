@@ -11,4 +11,14 @@ export class XhyveVm extends Vm {
   protected get networkDevice(): string {
     return 'virtio-net'
   }
+
+  override async setupWorkDirectory(
+    homeDirectory: string,
+    workDirectory: string
+  ): Promise<void> {
+	await this.execute(
+	  `rm -rf '${homeDirectory}' && ` +
+	    `mkdir -p '${workDirectory}'`
+	)
+  }
 }

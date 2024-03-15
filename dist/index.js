@@ -1710,10 +1710,19 @@ exports["default"] = Haiku;
 /***/ }),
 
 /***/ 6103:
-/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
 
 "use strict";
 
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.QemuVm = void 0;
 const qemu_vm_1 = __nccwpck_require__(1106);
@@ -1727,6 +1736,12 @@ class QemuVm extends qemu_vm_1.Vm {
             '-drive', `if=none,file=${this.configuration.resourcesDiskImage},id=drive1,cache=unsafe,discard=ignore,format=raw`,
         ];
     }
+    setupWorkDirectory(homeDirectory, workDirectory) {
+        return __awaiter(this, void 0, void 0, function* () {
+            yield this.execute(`rm -rf '${homeDirectory}' && ` +
+                `mkdir -p '${workDirectory}'`);
+        });
+    }
 }
 exports.QemuVm = QemuVm;
 //# sourceMappingURL=qemu_vm.js.map
@@ -1734,10 +1749,19 @@ exports.QemuVm = QemuVm;
 /***/ }),
 
 /***/ 223:
-/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
 
 "use strict";
 
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.XhyveVm = void 0;
 const xhyve_vm_1 = __nccwpck_require__(3321);
@@ -1748,6 +1772,12 @@ class XhyveVm extends xhyve_vm_1.Vm {
     }
     get networkDevice() {
         return 'virtio-net';
+    }
+    setupWorkDirectory(homeDirectory, workDirectory) {
+        return __awaiter(this, void 0, void 0, function* () {
+            yield this.execute(`rm -rf '${homeDirectory}' && ` +
+                `mkdir -p '${workDirectory}'`);
+        });
     }
 }
 exports.XhyveVm = XhyveVm;
