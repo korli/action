@@ -6,6 +6,40 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.25.0] - 2024-07-11
+### Added
+- Add support for NetBSD 9.4
+- Add support for FreeBSD 14.1
+
+### Deprecated
+- Support for macOS runners has been deprecated and will be removed in a future
+    release. The reason for using macOS runners in the past has been because of
+    the support for hardware accelerated nested virtualization using the
+    Hypervisor framework. Since the creation of this action, the Ubuntu runners
+    have been upgraded with better performance and added support for hardware
+    accelerated nested virtualization using KVM. QEMU is also more stable when
+    using KVM compared to the Hypervisor framework. Please use the
+    `ubuntu-latest` runner instead.
+
+- The Xhyve hypervisor has been deprecated and will be removed in a future
+    release. QEMU will be the only available hypervisor. The reason being
+    maintenance of the Xhyve hypervisor seemed to have stopped. It's also
+    starting to become next to impossible to build on later versions of macOS.
+    Please switch to the QEMU hypervisor by switching to the `ubuntu-latest`
+    runner.
+
+- The `hypervisor` input parameter has been deprecated will be removed in a
+    future release. The reason being support for the Xhyve hypervisor has been
+    deprecated, making this input parameter redundant. Please remove the use of
+    the `hypervisor` input parameter and switch to the `ubuntu-latest` runner.
+
+## [0.24.0] - 2024-04-12
+### Added
+- Add support for FreeBSD 13.3
+- Add support for NetBSD 10.0
+- Add support for NetBSD ARM64 ([#55](https://github.com/cross-platform-actions/action/issues/55))
+- Add support for OpenBSD 7.5 ([openbsd-builder#16](https://github.com/cross-platform-actions/openbsd-builder/issues/16))
+
 ## [0.23.0] - 2024-02-18
 ### Added
 - Add support for FreeBSD 14.0 ([#74](https://github.com/cross-platform-actions/action/issues/74))
@@ -179,8 +213,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Initial release
 
-[Unreleased]: https://github.com/cross-platform-actions/action/compare/v0.23.0...HEAD
+[Unreleased]: https://github.com/cross-platform-actions/action/compare/v0.25.0...HEAD
 
+[0.25.0]: https://github.com/cross-platform-actions/action/compare/v0.24.0...v0.25.0
+[0.24.0]: https://github.com/cross-platform-actions/action/compare/v0.23.0...v0.24.0
 [0.23.0]: https://github.com/cross-platform-actions/action/compare/v0.22.0...v0.23.0
 [0.22.0]: https://github.com/cross-platform-actions/action/compare/v0.21.1...v0.22.0
 [0.21.1]: https://github.com/cross-platform-actions/action/compare/v0.21.0...v0.21.1

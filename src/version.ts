@@ -1,9 +1,9 @@
 const version = {
   operating_system: {
-    freebsd: 'v0.6.0',
-    netbsd: 'v0.2.0',
-    openbsd: 'v0.7.0',
-    haiku: 'v0.0.6'
+    freebsd: 'v0.8.0',
+    netbsd: 'v0.4.0',
+    openbsd: 'v0.8.0',
+    haiku: 'v0.0.8'
   },
 
   resources: 'v0.11.0'

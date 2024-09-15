@@ -25,6 +25,7 @@ jobs:
       fail-fast: false
       matrix:
         version:
+          - '13.3'
           - '13.2'
           - '13.1'
           - '13.0'
@@ -41,7 +42,7 @@ jobs:
             # /home is symlinked to /usr/home. pwd will return the resolved path.
             work_directory: /usr/home/runner/work/action/action
 
-          - name: macos-latest
+          - name: macos-13
             work_directory: /Users/runner/work/action/action
 
         exclude:
@@ -49,9 +50,23 @@ jobs:
             architecture: { name: arm64 }
 
           - architecture: { name: arm64 }
-            host: { name: macos-latest }
+            host: { name: macos-13 }
 
         include:
+          - version: '14.1'
+            architecture: { name: arm64 }
+            host:
+              name: ubuntu-latest
+              work_directory: /home/runner/work/action/action
+
+          - version: '14.1'
+            architecture:
+              name: x86-64
+              uname: amd64
+            host:
+              name: ubuntu-latest
+              work_directory: /home/runner/work/action/action
+
           - version: '14.0'
             architecture: { name: arm64 }
             host:
@@ -71,7 +86,7 @@ jobs:
               name: x86-64
               uname: amd64
             host:
-              name: macos-latest
+              name: macos-13
               work_directory: /Users/runner/work/action/action
 
     steps:
@@ -153,6 +168,7 @@ jobs:
       fail-fast: false
       matrix:
         version:
+          - '7.5'
           - '7.4'
           - '7.3'
           - '7.2'
@@ -169,7 +185,7 @@ jobs:
           - name: ubuntu-latest
             work_directory: /home/runner/work/action/action
 
-          - name: macos-latest
+          - name: macos-13
             work_directory: /Users/runner/work/action/action
 
         exclude:
@@ -177,7 +193,7 @@ jobs:
             architecture: { name: arm64 }
 
           - architecture: { name: arm64 }
-            host: { name: macos-latest }
+            host: { name: macos-13 }
 
     steps:
       - name: Checkout
@@ -202,6 +218,8 @@ jobs:
       fail-fast: false
       matrix:
         version:
+          - '10.0'
+          - '9.4'
           - '9.3'
           - '9.2'
 
@@ -209,12 +227,28 @@ jobs:
           - name: x86-64
             uname: amd64
 
+          - name: arm64
+            uname: aarch64
+
         host:
           - name: ubuntu-latest
             work_directory: /home/runner/work/action/action
 
-          - name: macos-latest
+          - name: macos-13
             work_directory: /Users/runner/work/action/action
+
+        exclude:
+          - version: '9.4'
+            architecture: { name: arm64 }
+
+          - version: '9.3'
+            architecture: { name: arm64 }
+
+          - version: '9.2'
+            architecture: { name: arm64 }
+
+          - architecture: { name: arm64 }
+            host: { name: macos-13 }
 
     steps:
       - name: Checkout
@@ -277,7 +311,7 @@ jobs:
   test-hypervisor-config:
     timeout-minutes: 5
     name: Test configuring hypervisor
-    runs-on: macos-latest
+    runs-on: macos-13
 
     steps:
       - name: Checkout
@@ -301,7 +335,7 @@ jobs:
   test-custom-vm-image:
     timeout-minutes: 5
     name: Test custom VM image
-    runs-on: macos-latest
+    runs-on: macos-13
 
     steps:
       - name: Checkout
@@ -436,7 +470,7 @@ jobs:
   multiple-steps:
     timeout-minutes: 5
     name: Test running the action multiple times
-    runs-on: macos-latest
+    runs-on: macos-13
 
     strategy:
       fail-fast: false
@@ -478,7 +512,7 @@ jobs:
   openbsd-qemu-macos:
     timeout-minutes: 5
     name: Test OpenBSD with QEMU on macOS runner
-    runs-on: macos-latest
+    runs-on: macos-13
 
     steps:
       - name: Checkout
