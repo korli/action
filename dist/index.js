@@ -2643,7 +2643,7 @@ const version = {
         freebsd: 'v0.8.0',
         netbsd: 'v0.4.0',
         openbsd: 'v0.8.0',
-        haiku: 'v0.0.11'
+        haiku: 'v0.0.12'
     },
     resources: 'v0.11.0'
 };
